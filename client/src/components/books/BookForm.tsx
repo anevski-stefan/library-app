@@ -2,35 +2,43 @@ import { useState } from 'react';
 import api from '../../services/api';
 
 interface BookFormProps {
-  onSuccess: () => void;
-  onCancel: () => void;
   initialData?: {
     id?: string;
     title: string;
     author: string;
     isbn: string;
     quantity: number;
-    category: string;
+    book_category: string;
   };
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-const BookForm = ({ onSuccess, onCancel, initialData }: BookFormProps) => {
-  const [formData, setFormData] = useState({
-    title: initialData?.title || '',
-    author: initialData?.author || '',
-    isbn: initialData?.isbn || '',
-    quantity: initialData?.quantity || 1,
-    category: initialData?.category || '',
-  });
+const BookForm = ({ initialData, onSuccess, onCancel }: BookFormProps) => {
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [author, setAuthor] = useState(initialData?.author || '');
+  const [isbn, setIsbn] = useState(initialData?.isbn || '');
+  const [quantity, setQuantity] = useState(initialData?.quantity || 1);
+  const [book_category, setBookCategory] = useState(initialData?.book_category || '');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
+      const bookData = {
+        title,
+        author,
+        isbn,
+        quantity,
+        book_category,
+      };
+
       if (initialData?.id) {
-        await api.put(`/books/${initialData.id}`, formData);
+        await api.put(`/books/${initialData.id}`, bookData);
       } else {
-        await api.post('/books', formData);
+        await api.post('/books', bookData);
       }
+      
       onSuccess();
     } catch (error) {
       console.error('Error saving book:', error);
@@ -43,8 +51,8 @@ const BookForm = ({ onSuccess, onCancel, initialData }: BookFormProps) => {
         <label className="block text-sm font-medium text-gray-700">Title</label>
         <input
           type="text"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           required
         />
@@ -54,8 +62,8 @@ const BookForm = ({ onSuccess, onCancel, initialData }: BookFormProps) => {
         <label className="block text-sm font-medium text-gray-700">Author</label>
         <input
           type="text"
-          value={formData.author}
-          onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           required
         />
@@ -65,8 +73,8 @@ const BookForm = ({ onSuccess, onCancel, initialData }: BookFormProps) => {
         <label className="block text-sm font-medium text-gray-700">ISBN</label>
         <input
           type="text"
-          value={formData.isbn}
-          onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+          value={isbn}
+          onChange={(e) => setIsbn(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           required
         />
@@ -76,21 +84,23 @@ const BookForm = ({ onSuccess, onCancel, initialData }: BookFormProps) => {
         <label className="block text-sm font-medium text-gray-700">Quantity</label>
         <input
           type="number"
-          value={formData.quantity}
-          onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
           min="0"
           required
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Category</label>
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Category
+        </label>
         <input
           type="text"
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          value={book_category}
+          onChange={(e) => setBookCategory(e.target.value)}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           required
         />
       </div>

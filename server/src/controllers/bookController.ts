@@ -66,7 +66,7 @@ export const deleteBook = async (req: Request, res: Response) => {
 export const getBookStats = async (req: Request, res: Response) => {
   try {
     const totalBooks = await Book.sum('quantity');
-    const availableBooks = await Book.sum('availableQuantity');
+    const availableBooks = await Book.sum('available_quantity');
     const borrowedBooks = totalBooks - availableBooks;
     const overdueBooks = await Borrow.count({
       where: {

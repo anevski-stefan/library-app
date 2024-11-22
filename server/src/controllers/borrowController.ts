@@ -17,7 +17,7 @@ export const borrowBook = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Book not found' });
     }
 
-    if (book.availableQuantity < 1) {
+    if (book.available_quantity <= 0) {
       await t.rollback();
       return res.status(400).json({ message: 'Book is not available' });
     }
@@ -37,7 +37,7 @@ export const borrowBook = async (req: Request, res: Response) => {
     // Update book availability
     await book.update(
       {
-        availableQuantity: book.availableQuantity - 1,
+        available_quantity: book.available_quantity - 1,
       },
       { transaction: t }
     );
@@ -86,7 +86,7 @@ export const returnBook = async (req: Request, res: Response) => {
     // Update book availability
     await book.update(
       {
-        availableQuantity: book.availableQuantity + 1,
+        available_quantity: book.available_quantity + 1,
       },
       { transaction: t }
     );

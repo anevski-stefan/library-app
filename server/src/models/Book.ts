@@ -7,8 +7,8 @@ export interface BookAttributes {
   author: string;
   isbn: string;
   quantity: number;
-  availableQuantity: number;
-  category: string;
+  available_quantity: number;
+  book_category: string;
   barcode?: string;
 }
 
@@ -18,8 +18,8 @@ class Book extends Model<BookAttributes> implements BookAttributes {
   public author!: string;
   public isbn!: string;
   public quantity!: number;
-  public availableQuantity!: number;
-  public category!: string;
+  public available_quantity!: number;
+  public book_category!: string;
   public barcode?: string;
 }
 
@@ -48,14 +48,15 @@ Book.init(
       allowNull: false,
       defaultValue: 0,
     },
-    availableQuantity: {
+    available_quantity: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
     },
-    category: {
+    book_category: {
       type: DataTypes.STRING,
       allowNull: false,
+      field: 'book_category'
     },
     barcode: {
       type: DataTypes.STRING,
@@ -65,6 +66,7 @@ Book.init(
   {
     sequelize,
     tableName: 'books',
+    underscored: true,
   }
 );
 
