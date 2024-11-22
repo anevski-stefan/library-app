@@ -1,0 +1,116 @@
+import { Request, Response } from 'express';
+import Book from '../models/Book';
+import Borrow from '../models/Borrow';
+import { sequelize } from '../config/database';
+
+export const borrowBook = async (req: Request, res: Response) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { bookId, returnDate } = req.body;
+    const userId = req.user!.id;
+
+    // Check if book exists and is available
+    const book = await Book.findByPk(bookId, { transaction: t });
+    if (!book) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    if (book.availableQuantity < 1) {
+      await t.rollback();
+      return res.status(400).json({ message: 'Book is not available' });
+    }
+
+    // Create borrow record
+    const borrow = await Borrow.create(
+      {
+        userId,
+        bookId,
+        returnDate: new Date(returnDate),
+        status: 'borrowed',
+        borrowDate: new Date(),
+      },
+      { transaction: t }
+    );
+
+    // Update book availability
+    await book.update(
+      {
+        availableQuantity: book.availableQuantity - 1,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    res.status(201).json(borrow);
+  } catch (error) {
+    await t.rollback();
+    console.error('Borrow book error:', error);
+    res.status(500).json({ message: 'Error borrowing book' });
+  }
+};
+
+export const returnBook = async (req: Request, res: Response) => {
+  const t = await sequelize.transaction();
+
+  try {
+    const { borrowId } = req.params;
+
+    const borrow = await Borrow.findByPk(borrowId, { transaction: t });
+    if (!borrow) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Borrow record not found' });
+    }
+
+    if (borrow.status === 'returned') {
+      await t.rollback();
+      return res.status(400).json({ message: 'Book already returned' });
+    }
+
+    const book = await Book.findByPk(borrow.bookId, { transaction: t });
+    if (!book) {
+      await t.rollback();
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    // Update borrow record
+    await borrow.update(
+      {
+        status: 'returned',
+        actualReturnDate: new Date(),
+      },
+      { transaction: t }
+    );
+
+    // Update book availability
+    await book.update(
+      {
+        availableQuantity: book.availableQuantity + 1,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    res.json(borrow);
+  } catch (error) {
+    await t.rollback();
+    console.error('Return book error:', error);
+    res.status(500).json({ message: 'Error returning book' });
+  }
+};
+
+export const getUserBorrows = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const borrows = await Borrow.findAll({
+      where: { userId },
+      include: [Book],
+      order: [['borrowDate', 'DESC']],
+    });
+    res.json(borrows);
+  } catch (error) {
+    console.error('Get user borrows error:', error);
+    res.status(500).json({ message: 'Error fetching borrows' });
+  }
+}; 
