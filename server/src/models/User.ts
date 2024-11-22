@@ -40,10 +40,12 @@ User.init(
     firstName: {
       type: DataTypes.STRING,
       allowNull: false,
+      field: 'first_name',
     },
     lastName: {
       type: DataTypes.STRING,
       allowNull: false,
+      field: 'last_name',
     },
     role: {
       type: DataTypes.ENUM('admin', 'librarian', 'member'),
@@ -53,6 +55,7 @@ User.init(
   {
     sequelize,
     tableName: 'users',
+    underscored: true,
   }
 );
 
