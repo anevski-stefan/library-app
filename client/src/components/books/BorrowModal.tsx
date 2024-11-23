@@ -28,32 +28,32 @@ const BorrowModal = ({ bookId, bookTitle, onSuccess, onClose }: BorrowModalProps
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Borrow Book</h2>
-        <p className="mb-4">Book: {bookTitle}</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+        <p className="mb-6">Book: {bookTitle}</p>
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg">
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
               Return Date
             </label>
             <input
               type="date"
               value={returnDate}
               onChange={(e) => setReturnDate(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+              className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
               required
               min={new Date().toISOString().split('T')[0]}
             />
           </div>
-          <div className="flex justify-end space-x-3">
+          <div className="flex items-center justify-end space-x-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md"
+              className="text-gray-600 hover:text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105"
             >
               Borrow
             </button>
