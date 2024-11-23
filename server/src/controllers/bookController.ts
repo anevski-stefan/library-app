@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Book from '../models/Book';
 import Borrow from '../models/Borrow';
+import { Op } from 'sequelize';
 
 export const createBook = async (req: Request, res: Response) => {
   try {
@@ -72,9 +73,14 @@ export const getBookStats = async (req: Request, res: Response) => {
     const totalBooks = await Book.sum('quantity');
     const availableBooks = await Book.sum('available_quantity');
     const borrowedBooks = totalBooks - availableBooks;
+    
+    const today = new Date();
     const overdueBooks = await Borrow.count({
       where: {
-        status: 'overdue'
+        returnDate: {
+          [Op.lt]: today
+        },
+        actualReturnDate: null
       }
     });
 

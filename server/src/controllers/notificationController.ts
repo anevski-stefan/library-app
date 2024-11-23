@@ -1,107 +1,264 @@
 import { Request, Response } from 'express';
 import Notification from '../models/Notification';
 import Borrow, { BorrowAttributes } from '../models/Borrow';
-import { Op } from 'sequelize';
-import Book, { BookAttributes } from '../models/Book';
+import { Op, WhereOptions } from 'sequelize';
 
-export const getUserNotifications = async (req: Request, res: Response) => {
+export const createOverdueNotification = async (
+  userId: string,
+  bookTitle: string,
+  borrowId: string
+) => {
   try {
-    const userId = req.user!.id;
+    await Notification.create({
+      userId,
+      title: 'Book Overdue',
+      message: `The book "${bookTitle}" is overdue. Please return it as soon as possible.`,
+      type: 'overdue',
+      borrowId,
+      read: false,
+    });
+  } catch (error) {
+    console.error('Error creating overdue notification:', error);
+  }
+};
+
+export const createReminderNotification = async (
+  userId: string,
+  bookTitle: string,
+  borrowId: string,
+  daysLeft: number
+) => {
+  try {
+    await Notification.create({
+      userId,
+      title: 'Return Reminder',
+      message: `The book "${bookTitle}" is due in ${daysLeft} days.`,
+      type: 'reminder',
+      borrowId,
+    });
+  } catch (error) {
+    console.error('Error creating reminder notification:', error);
+  }
+};
+
+export const getNotifications = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const notifications = await Notification.findAll({
       where: { userId },
       order: [['createdAt', 'DESC']],
     });
+
     res.json(notifications);
   } catch (error) {
-    console.error('Get notifications error:', error);
+    console.error('Error fetching notifications:', error);
     res.status(500).json({ message: 'Error fetching notifications' });
   }
 };
 
-export const markNotificationAsRead = async (req: Request, res: Response) => {
+export const markAsRead = async (req: Request, res: Response) => {
   try {
-    const { notificationId } = req.params;
-    const notification = await Notification.findByPk(notificationId);
-    
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const notification = await Notification.findOne({
+      where: { id, userId },
+    });
+
     if (!notification) {
       return res.status(404).json({ message: 'Notification not found' });
     }
-    
+
     await notification.update({ read: true });
     res.json(notification);
   } catch (error) {
-    console.error('Mark notification error:', error);
-    res.status(500).json({ message: 'Error updating notification' });
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ message: 'Error marking notification as read' });
+  }
+};
+
+export const markAllAsRead = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    await Notification.update(
+      { read: true },
+      {
+        where: {
+          userId,
+          read: false,
+        },
+      }
+    );
+
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ message: 'Error marking all notifications as read' });
+  }
+};
+
+export const createReturnNotification = async (
+  userId: string,
+  bookTitle: string,
+  borrowId: string
+) => {
+  try {
+    await Notification.create({
+      userId,
+      title: 'Book Returned',
+      message: `The book "${bookTitle}" has been returned successfully.`,
+      type: 'return',
+      borrowId,
+    });
+  } catch (error) {
+    console.error('Error creating return notification:', error);
+  }
+};
+
+export const createBookRequestNotification = async (
+  userId: string,
+  bookTitle: string,
+  bookRequestId: string
+) => {
+  try {
+    await Notification.create({
+      userId,
+      title: 'New Book Request',
+      message: `A new request has been submitted for "${bookTitle}".`,
+      type: 'book_request',
+      bookRequestId,
+    });
+  } catch (error) {
+    console.error('Error creating book request notification:', error);
+  }
+};
+
+export const createRequestApprovedNotification = async (
+  userId: string,
+  bookTitle: string,
+  bookRequestId: string
+) => {
+  try {
+    await Notification.create({
+      userId,
+      title: 'Request Approved',
+      message: `Your request for "${bookTitle}" has been approved.`,
+      type: 'request_approved',
+      bookRequestId,
+    });
+  } catch (error) {
+    console.error('Error creating request approved notification:', error);
+  }
+};
+
+export const createRequestRejectedNotification = async (
+  userId: string,
+  bookTitle: string,
+  bookRequestId: string,
+  reason?: string
+) => {
+  try {
+    await Notification.create({
+      userId,
+      title: 'Request Rejected',
+      message: `Your request for "${bookTitle}" has been rejected.${
+        reason ? ` Reason: ${reason}` : ''
+      }`,
+      type: 'request_rejected',
+      bookRequestId,
+    });
+  } catch (error) {
+    console.error('Error creating request rejected notification:', error);
   }
 };
 
 export const checkOverdueBooks = async () => {
   try {
-    const overdueBorrows = await Borrow.findAll({
-      where: {
-        status: 'borrowed',
-        returnDate: {
-          [Op.lt]: new Date(),
-        },
+    const today = new Date();
+    const whereClause: WhereOptions<BorrowAttributes> = {
+      returnDate: {
+        [Op.lt]: today
       },
+      actualReturnDate: null,
+      notificationSent: false
+    };
+
+    const overdueBooks = await Borrow.findAll({
+      where: whereClause,
+      include: ['user', 'book']
     });
 
-    for (const borrow of overdueBorrows) {
-      await borrow.update({ status: 'overdue' });
+    for (const borrow of overdueBooks) {
+      if (!borrow.book) {
+        console.error(`Book not found for borrow ID: ${borrow.id}`);
+        continue;
+      }
 
-      await Notification.create({
-        userId: borrow.userId,
-        message: `Your borrowed book is overdue. Please return it as soon as possible.`,
-        type: 'overdue',
-        borrowId: borrow.id,
-        read: false, 
-      });
+      await createOverdueNotification(
+        borrow.userId,
+        borrow.book.title,
+        borrow.id
+      );
+
+      await borrow.update({ notificationSent: true });
     }
   } catch (error) {
-    console.error('Check overdue books error:', error);
+    console.error('Error checking overdue books:', error);
   }
 };
 
 export const checkUpcomingDueBooks = async () => {
   try {
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+    const today = new Date();
+    const threeDaysFromNow = new Date(today.setDate(today.getDate() + 3));
+    
+    const whereClause: WhereOptions<BorrowAttributes> = {
+      returnDate: {
+        [Op.lte]: threeDaysFromNow,
+        [Op.gt]: today
+      },
+      actualReturnDate: null,
+      reminderSent: false
+    };
 
     const upcomingDueBooks = await Borrow.findAll({
-      where: {
-        status: 'borrowed',
-        returnDate: {
-          [Op.and]: {
-            [Op.gt]: new Date(),
-            [Op.lt]: threeDaysFromNow
-          }
-        }
-      },
-      include: [{
-        model: Book,
-        as: 'book',
-        attributes: ['title']
-      }]
+      where: whereClause,
+      include: ['user', 'book']
     });
 
     for (const borrow of upcomingDueBooks) {
-      const borrowData = borrow.get({ plain: true }) as BorrowAttributes & { 
-        book: Pick<BookAttributes, 'title'> 
-      };
-      
-      if (!borrowData.book) {
+      if (!borrow.book) {
         console.error(`Book not found for borrow ID: ${borrow.id}`);
         continue;
       }
 
-      await Notification.create({
-        userId: borrow.userId,
-        message: `Your borrowed book "${borrowData.book.title}" is due in 3 days.`,
-        type: 'reminder',
-        borrowId: borrow.id,
-      });
+      const daysLeft = Math.ceil(
+        (borrow.returnDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      await createReminderNotification(
+        borrow.userId,
+        borrow.book.title,
+        borrow.id,
+        daysLeft
+      );
+
+      await borrow.update({ reminderSent: true });
     }
   } catch (error) {
-    console.error('Check upcoming due books error:', error);
+    console.error('Error checking upcoming due books:', error);
   }
 }; 

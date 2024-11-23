@@ -1,24 +1,23 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '../../store/hooks';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  roles?: string[];
+  children: JSX.Element;
+  allowedRoles?: string[];
 }
 
-const ProtectedRoute = ({ children, roles = [] }: ProtectedRouteProps) => {
-  const { user, token } = useAppSelector((state) => state.auth);
-  const location = useLocation();
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+  const { user } = useAppSelector((state) => state.auth);
 
-  if (!token || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!user) {
+    return <Navigate to="/login" />;
   }
 
-  if (roles.length && !roles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" />;
   }
 
-  return <>{children}</>;
+  return children;
 };
 
 export default ProtectedRoute; 

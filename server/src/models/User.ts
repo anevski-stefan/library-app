@@ -19,6 +19,13 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public firstName!: string;
   public lastName!: string;
   public role!: 'admin' | 'librarian' | 'member';
+
+  static associate(models: any) {
+    User.hasMany(models.BookRequest, {
+      foreignKey: 'user_id',
+      as: 'bookRequests'
+    });
+  }
 }
 
 User.init(

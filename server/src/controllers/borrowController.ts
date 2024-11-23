@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Book from '../models/Book';
-import Borrow from '../models/Borrow';
+import Borrow, { BorrowCreationAttributes } from '../models/Borrow';
 import { sequelize } from '../config/database';
 
 export const borrowBook = async (req: Request, res: Response) => {
@@ -23,16 +23,17 @@ export const borrowBook = async (req: Request, res: Response) => {
     }
 
     // Create borrow record
-    const borrow = await Borrow.create(
-      {
-        userId,
-        bookId,
-        returnDate: new Date(returnDate),
-        status: 'borrowed',
-        borrowDate: new Date(),
-      },
-      { transaction: t }
-    );
+    const borrowData: BorrowCreationAttributes = {
+      userId,
+      bookId,
+      borrowDate: new Date(),
+      returnDate: new Date(returnDate),
+      actualReturnDate: null,
+      notificationSent: false,
+      reminderSent: false
+    };
+
+    const borrow = await Borrow.create(borrowData, { transaction: t });
 
     // Update book availability
     await book.update(
@@ -63,7 +64,7 @@ export const returnBook = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Borrow record not found' });
     }
 
-    if (borrow.status === 'returned') {
+    if (borrow.actualReturnDate) {
       await t.rollback();
       return res.status(400).json({ message: 'Book already returned' });
     }
@@ -77,7 +78,6 @@ export const returnBook = async (req: Request, res: Response) => {
     // Update borrow record
     await borrow.update(
       {
-        status: 'returned',
         actualReturnDate: new Date(),
       },
       { transaction: t }

@@ -6,7 +6,10 @@ import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
 import borrowRoutes from './routes/borrowRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import bookRequestRoutes from './routes/bookRequestRoutes';
 import { startScheduledTasks } from './utils/scheduler';
+import User from './models/User';
+import BookRequest from './models/BookRequest';
 
 dotenv.config();
 
@@ -35,8 +38,21 @@ app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrows', borrowRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/book-requests', bookRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
+
+// Initialize associations
+const models = {
+  User,
+  BookRequest
+};
+
+Object.values(models).forEach((model: any) => {
+  if (model.associate) {
+    model.associate(models);
+  }
+});
 
 async function startServer() {
   try {
@@ -58,3 +74,5 @@ async function startServer() {
 }
 
 startServer();
+
+export default app;

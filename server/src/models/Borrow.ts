@@ -1,5 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database';
+import User from './User';
 import Book from './Book';
 
 export interface BorrowAttributes {
@@ -8,14 +9,15 @@ export interface BorrowAttributes {
   bookId: string;
   borrowDate: Date;
   returnDate: Date;
-  actualReturnDate?: Date;
-  status: 'borrowed' | 'returned' | 'overdue';
+  actualReturnDate?: Date | null;
+  notificationSent: boolean;
+  reminderSent: boolean;
+  user?: User;
   book?: Book;
 }
 
-interface BorrowCreationAttributes extends Omit<BorrowAttributes, 'id' | 'borrowDate'> {
+export interface BorrowCreationAttributes extends Omit<BorrowAttributes, 'id'> {
   id?: string;
-  borrowDate?: Date;
 }
 
 class Borrow extends Model<BorrowAttributes, BorrowCreationAttributes> implements BorrowAttributes {
@@ -24,8 +26,13 @@ class Borrow extends Model<BorrowAttributes, BorrowCreationAttributes> implement
   public bookId!: string;
   public borrowDate!: Date;
   public returnDate!: Date;
-  public actualReturnDate?: Date;
-  public status!: 'borrowed' | 'returned' | 'overdue';
+  public actualReturnDate!: Date | null;
+  public notificationSent!: boolean;
+  public reminderSent!: boolean;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+  public user?: User;
+  public book?: Book;
 }
 
 Borrow.init(
@@ -38,15 +45,22 @@ Borrow.init(
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: User,
+        key: 'id',
+      },
     },
     bookId: {
       type: DataTypes.UUID,
       allowNull: false,
+      references: {
+        model: Book,
+        key: 'id',
+      },
     },
     borrowDate: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
     },
     returnDate: {
       type: DataTypes.DATE,
@@ -56,10 +70,15 @@ Borrow.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
-    status: {
-      type: DataTypes.ENUM('borrowed', 'returned', 'overdue'),
+    notificationSent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
       allowNull: false,
-      defaultValue: 'borrowed',
+    },
+    reminderSent: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
     },
   },
   {
@@ -72,6 +91,11 @@ Borrow.init(
 Borrow.belongsTo(Book, {
   foreignKey: 'bookId',
   as: 'book'
+});
+
+Book.hasMany(Borrow, {
+  foreignKey: 'bookId',
+  as: 'borrows'
 });
 
 export default Borrow; 

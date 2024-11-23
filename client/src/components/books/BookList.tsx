@@ -4,6 +4,7 @@ import BookForm from './BookForm';
 import BorrowModal from './BorrowModal';
 import BookScanner from './BookScanner';
 import { useAppSelector } from '../../store/hooks';
+import RequestBookModal from './RequestBookModal';
 
 interface Book {
     id: string;
@@ -30,6 +31,8 @@ const BookList = () => {
   const [bookToBorrow, setBookToBorrow] = useState<Book | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [bookToRequest, setBookToRequest] = useState<Book | null>(null);
 
   console.log('Current user role:', user?.role);
 
@@ -98,6 +101,21 @@ const BookList = () => {
     fetchBooks();
   };
 
+  const handleRequestBook = (book: Book) => {
+    setBookToRequest({
+      ...book,
+      title: book.title || '',
+      author: book.author || ''
+    });
+    setIsRequestModalOpen(true);
+  };
+
+  const handleRequestSuccess = () => {
+    setIsRequestModalOpen(false);
+    setBookToRequest(null);
+    fetchBooks();
+  };
+
   const filteredBooks = books.filter(book => {
     const matchesSearch = 
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,22 +135,31 @@ const BookList = () => {
   const renderHeader = () => (
     <div className="flex justify-between items-center mb-6">
       <h1 className="text-2xl font-bold">Books</h1>
-      {isAdmin && (
-        <div className="flex space-x-4">
-          <button 
-            onClick={() => setIsFormOpen(true)}
+      <div className="flex space-x-4">
+        {isAdmin ? (
+          <>
+            <button 
+              onClick={() => setIsFormOpen(true)}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Add New Book
+            </button>
+            <button 
+              onClick={() => setIsScannerOpen(true)}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            >
+              Scan Book
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => handleRequestBook({ title: '', author: '', id: '', isbn: '', quantity: 0, available_quantity: 0, book_category: '', createdAt: '', updatedAt: '' })}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Add New Book
+            Request New Book
           </button>
-          <button 
-            onClick={() => setIsScannerOpen(true)}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
-            Scan Book
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -291,6 +318,18 @@ const BookList = () => {
             fetchBooks();
           }}
           onClose={() => setIsScannerOpen(false)}
+        />
+      )}
+
+      {isRequestModalOpen && bookToRequest && (
+        <RequestBookModal
+          bookTitle={bookToRequest.title}
+          bookAuthor={bookToRequest.author}
+          onSuccess={handleRequestSuccess}
+          onClose={() => {
+            setIsRequestModalOpen(false);
+            setBookToRequest(null);
+          }}
         />
       )}
     </div>
