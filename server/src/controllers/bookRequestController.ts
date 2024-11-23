@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import BookRequest from '../models/BookRequest';
 import User from '../models/User';
+import { wsService } from '../services/websocketService';
+import Notification from '../models/Notification';
 
 export const createBookRequest = async (req: Request, res: Response) => {
   try {
@@ -14,6 +16,33 @@ export const createBookRequest = async (req: Request, res: Response) => {
       external_link,
       status: 'pending'
     });
+
+    // Find all admin users
+    const adminUsers = await User.findAll({
+      where: {
+        role: 'admin'
+      }
+    });
+
+    // Create notifications for each admin
+    for (const admin of adminUsers) {
+      await Notification.create({
+        userId: admin.id,
+        title: 'New Book Request',
+        message: `New book request: "${title}" by ${author}`,
+        type: 'book_request',
+        read: false,
+        bookRequestId: bookRequest.id
+      });
+
+      // Send WebSocket notification
+      wsService.sendNotification(admin.id, {
+        title: 'New Book Request',
+        message: `New book request: "${title}" by ${author}`,
+        type: 'book_request',
+        bookRequestId: bookRequest.id
+      });
+    }
 
     res.status(201).json(bookRequest);
   } catch (error) {

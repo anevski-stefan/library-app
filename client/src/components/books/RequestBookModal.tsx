@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import api from '../../services/api';
-import { showNotification } from '../../services/notificationService';
 
 interface RequestBookModalProps {
   bookTitle: string;
@@ -28,11 +27,7 @@ const RequestBookModal = ({ bookTitle, bookAuthor, onSuccess, onClose }: Request
         external_link: externalLink,
       });
       onSuccess();
-      showNotification({
-        title: 'Book Request Submitted',
-        message: `Your request for "${title}" has been submitted successfully.`,
-        type: 'book_request',
-      });
+      onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to submit request');
     } finally {
