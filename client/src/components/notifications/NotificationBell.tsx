@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchNotifications, markAsRead } from '../../features/notifications/notificationSlice';
+import { fetchNotifications, markAsRead, clearAllNotifications } from '../../features/notifications/notificationSlice';
 import { useNavigate } from 'react-router-dom';
 
 const getNotificationEmoji = (type: string) => {
@@ -24,6 +24,7 @@ const getNotificationEmoji = (type: string) => {
 
 export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -58,6 +59,20 @@ export const NotificationBell = () => {
     setIsOpen(false);
   };
 
+  const handleClearAll = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent notification click handler
+    if (window.confirm('Are you sure you want to clear all notifications? This cannot be undone.')) {
+      setIsClearing(true);
+      try {
+        await dispatch(clearAllNotifications()).unwrap();
+      } catch (error) {
+        console.error('Failed to clear notifications:', error);
+      } finally {
+        setIsClearing(false);
+      }
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -84,6 +99,27 @@ export const NotificationBell = () => {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-50 max-h-[80vh] overflow-y-auto">
+          <div className="border-b border-gray-200">
+            <div className="px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                {notifications.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {unreadCount} unread
+                  </span>
+                )}
+              </div>
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  disabled={isClearing}
+                  className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                >
+                  {isClearing ? 'Clearing...' : 'Clear All'}
+                </button>
+              )}
+            </div>
+          </div>
           <div className="py-2">
             {notifications.length === 0 ? (
               <div className="px-4 py-2 text-sm text-gray-500">

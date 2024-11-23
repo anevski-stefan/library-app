@@ -50,6 +50,14 @@ export const markAllAsRead = createAsyncThunk(
   }
 );
 
+export const clearAllNotifications = createAsyncThunk(
+  'notifications/clearAll',
+  async () => {
+    await api.delete('/notifications/clear-all');
+    return [];
+  }
+);
+
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -95,6 +103,10 @@ const notificationSlice = createSlice({
         state.notifications.forEach((notification) => {
           notification.read = true;
         });
+        state.unreadCount = 0;
+      })
+      .addCase(clearAllNotifications.fulfilled, (state) => {
+        state.notifications = [];
         state.unreadCount = 0;
       });
   },

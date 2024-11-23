@@ -3,7 +3,8 @@ import { auth } from '../middleware/auth';
 import {
   getNotifications,
   markAsRead,
-  markAllAsRead
+  markAllAsRead,
+  clearAllNotifications
 } from '../controllers/notificationController';
 
 const router = express.Router();
@@ -11,5 +12,6 @@ const router = express.Router();
 router.get('/', auth(), getNotifications);
 router.put('/:id/read', auth(), markAsRead);
 router.put('/read-all', auth(), markAllAsRead);
+router.delete('/clear-all', auth(), clearAllNotifications);
 
 export default router; 

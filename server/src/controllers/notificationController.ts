@@ -261,4 +261,23 @@ export const checkUpcomingDueBooks = async () => {
   } catch (error) {
     console.error('Error checking upcoming due books:', error);
   }
+};
+
+export const clearAllNotifications = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    await Notification.destroy({
+      where: { userId }
+    });
+
+    res.json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
+    res.status(500).json({ message: 'Error clearing notifications' });
+  }
 }; 
