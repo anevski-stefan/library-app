@@ -23,6 +23,7 @@ const RequestsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [rejectModalRequest, setRejectModalRequest] = useState<BookRequest | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'in_progress' | 'approved' | 'rejected'>('pending');
+  const [loadingRequests, setLoadingRequests] = useState<Set<string>>(new Set());
   const { user } = useAppSelector((state) => state.auth);
 
   const groupedRequests = {
@@ -58,10 +59,17 @@ const RequestsPage = () => {
 
   const handleApprove = async (request: BookRequest) => {
     try {
+      setLoadingRequests(prev => new Set(prev).add(request.id));
       await api.put(`/book-requests/${request.id}/approve`);
       fetchRequests();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to approve request');
+    } finally {
+      setLoadingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(request.id);
+        return newSet;
+      });
     }
   };
 
@@ -77,15 +85,23 @@ const RequestsPage = () => {
 
   const handleStartAcquisition = async (request: BookRequest) => {
     try {
+      setLoadingRequests(prev => new Set(prev).add(request.id));
       await api.put(`/book-requests/${request.id}/start-acquisition`);
       fetchRequests();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to start acquisition');
+    } finally {
+      setLoadingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(request.id);
+        return newSet;
+      });
     }
   };
 
   const handleComplete = async (request: BookRequest) => {
     try {
+      setLoadingRequests(prev => new Set(prev).add(request.id));
       await api.put(`/book-requests/${request.id}/complete-acquisition`);
       fetchRequests();
     } catch (err: any) {
@@ -94,6 +110,12 @@ const RequestsPage = () => {
         title: 'Error',
         message: 'Failed to complete acquisition',
         type: 'error'
+      });
+    } finally {
+      setLoadingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(request.id);
+        return newSet;
       });
     }
   };
@@ -134,13 +156,25 @@ const RequestsPage = () => {
                   <div className="flex space-x-4">
                     <button
                       onClick={() => handleApprove(request)}
-                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      disabled={loadingRequests.has(request.id)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
                     >
-                      Approve
+                      {loadingRequests.has(request.id) ? (
+                        <div className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Approving...
+                        </div>
+                      ) : (
+                        'Approve'
+                      )}
                     </button>
                     <button
                       onClick={() => setRejectModalRequest(request)}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                      disabled={loadingRequests.has(request.id)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
                     >
                       Reject
                     </button>
@@ -151,9 +185,20 @@ const RequestsPage = () => {
                   <div className="flex space-x-4">
                     <button
                       onClick={() => handleStartAcquisition(request)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      disabled={loadingRequests.has(request.id)}
+                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
                     >
-                      Start Acquisition
+                      {loadingRequests.has(request.id) ? (
+                        <div className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Starting...
+                        </div>
+                      ) : (
+                        'Start Acquisition'
+                      )}
                     </button>
                   </div>
                 )}
@@ -162,9 +207,20 @@ const RequestsPage = () => {
                   <div className="flex space-x-4">
                     <button
                       onClick={() => handleComplete(request)}
-                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      disabled={loadingRequests.has(request.id)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
                     >
-                      Complete Acquisition
+                      {loadingRequests.has(request.id) ? (
+                        <div className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Completing...
+                        </div>
+                      ) : (
+                        'Complete Acquisition'
+                      )}
                     </button>
                   </div>
                 )}
