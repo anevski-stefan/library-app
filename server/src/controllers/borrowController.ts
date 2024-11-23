@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Book from '../models/Book';
 import Borrow, { BorrowCreationAttributes } from '../models/Borrow';
 import { sequelize } from '../config/database';
+import { wsService } from '../services/websocketService';
 
 export const borrowBook = async (req: Request, res: Response) => {
   const t = await sequelize.transaction();
@@ -42,6 +43,13 @@ export const borrowBook = async (req: Request, res: Response) => {
       },
       { transaction: t }
     );
+
+    // Send notification through WebSocket
+    wsService.sendNotification(userId, {
+      title: 'Book Borrowed',
+      message: `You have successfully borrowed ${book.title}`,
+      type: 'success'
+    });
 
     await t.commit();
     res.status(201).json(borrow);

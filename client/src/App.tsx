@@ -16,13 +16,17 @@ function App() {
   const { user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    if (user) {
-      wsService.connect(user.id);
-    }
+    if (user?.id) {
+      // Small delay to ensure proper initialization
+      const timer = setTimeout(() => {
+        wsService.connect(user.id);
+      }, 100);
 
-    return () => {
-      wsService.disconnect();
-    };
+      return () => {
+        clearTimeout(timer);
+        wsService.disconnect();
+      };
+    }
   }, [user]);
 
   return (

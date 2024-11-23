@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@types/node-cron": "^3.0.11",
+    "@types/ws": "^8.5.13",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -17,7 +18,8 @@
     "node-cron": "^3.0.3",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.5"
+    "sequelize": "^6.37.5",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

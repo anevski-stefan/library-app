@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { wsService } from './services/websocketService';
 import { sequelize } from './config/database';
 import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
@@ -14,6 +16,7 @@ import BookRequest from './models/BookRequest';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 
 // Middleware
 app.use(cors());
@@ -62,7 +65,10 @@ async function startServer() {
     await sequelize.sync(); // This will create the tables if they don't exist
     console.log('Database synchronized');
     
-    app.listen(PORT, () => {
+    // Initialize WebSocket service
+    wsService.initialize(httpServer);
+    
+    httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
 
