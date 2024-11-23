@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch } from '../../store/hooks';
 import { login } from '../../features/auth/authSlice';
 import { BookOpen } from 'lucide-react';
@@ -55,7 +55,7 @@ const LoginForm = () => {
                 required
                 className="mt-1 block w-full px-3 py-2 bg-amber-50 border border-amber-300 rounded-md text-sm shadow-sm placeholder-amber-400
                          focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                placeholder="you@example.com"
+                placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -71,6 +71,7 @@ const LoginForm = () => {
                 required
                 className="mt-1 block w-full px-3 py-2 bg-amber-50 border border-amber-300 rounded-md text-sm shadow-sm placeholder-amber-400
                          focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -88,9 +89,14 @@ const LoginForm = () => {
         </div>
 
         <div className="px-6 py-4 bg-amber-100 border-t border-amber-200">
-          <a href="#" className="text-sm text-amber-600 hover:text-amber-500">
-            Forgot your password?
-          </a>
+          <div className="flex flex-col space-y-2">
+            <Link to="#" className="text-sm text-amber-600 hover:text-amber-500">
+              Forgot your password?
+            </Link>
+            <Link to="/register" className="text-sm text-amber-600 hover:text-amber-500">
+              Don't have an account? Sign up
+            </Link>
+          </div>
         </div>
       </div>
     </div>
