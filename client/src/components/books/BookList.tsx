@@ -33,6 +33,8 @@ const BookList = () => {
 
   console.log('Current user role:', user?.role);
 
+  const isAdmin = user?.role === 'admin';
+
   useEffect(() => {
     fetchBooks();
   }, []);
@@ -48,19 +50,34 @@ const BookList = () => {
     }
   };
 
-  const handleEdit = (book: Book) => {
-    setSelectedBook(book);
-    setIsFormOpen(true);
+  const handleEdit = async (book: Book) => {
+    try {
+      if (!isAdmin) {
+        setError('Only administrators can edit books');
+        return;
+      }
+      setSelectedBook(book);
+      setIsFormOpen(true);
+    } catch (error) {
+      console.error('Error handling edit:', error);
+      setError('Failed to edit book');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this book?')) {
-      try {
+    try {
+      if (!isAdmin) {
+        setError('Only administrators can delete books');
+        return;
+      }
+      
+      if (window.confirm('Are you sure you want to delete this book?')) {
         await api.delete(`/books/${id}`);
         fetchBooks();
-      } catch (error) {
-        console.error('Error deleting book:', error);
       }
+    } catch (error: any) {
+      console.error('Error deleting book:', error);
+      setError(error.response?.data?.message || 'Failed to delete book');
     }
   };
 
@@ -97,6 +114,57 @@ const BookList = () => {
 
   console.log('Current user:', user);
 
+  const renderHeader = () => (
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-2xl font-bold">Books</h1>
+      {isAdmin && (
+        <div className="flex space-x-4">
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Add New Book
+          </button>
+          <button 
+            onClick={() => setIsScannerOpen(true)}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Scan Book
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderActionButtons = (book: Book) => (
+    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+      {isAdmin && (
+        <>
+          <button 
+            onClick={() => handleEdit(book)}
+            className="text-indigo-600 hover:text-indigo-900 mr-4"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDelete(book.id)}
+            className="text-red-600 hover:text-red-900 mr-4"
+          >
+            Delete
+          </button>
+        </>
+      )}
+      {book.available_quantity > 0 && (
+        <button
+          onClick={() => handleBorrow(book)}
+          className="text-green-600 hover:text-green-900"
+        >
+          Borrow
+        </button>
+      )}
+    </td>
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -115,23 +183,18 @@ const BookList = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Books</h1>
-        <div className="flex space-x-4">
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {error}
           <button 
-            onClick={() => setIsFormOpen(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            onClick={() => setError(null)} 
+            className="float-right"
           >
-            Add New Book
-          </button>
-          <button 
-            onClick={() => setIsScannerOpen(true)}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2"
-          >
-            Scan Book
+            ×
           </button>
         </div>
-      </div>
+      )}
+      {renderHeader()}
 
       <div className="mb-4 flex space-x-4">
         <input
@@ -199,28 +262,7 @@ const BookList = () => {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {book.available_quantity} of {book.quantity}
                       </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button 
-                          onClick={() => handleEdit(book)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(book.id)}
-                          className="text-red-600 hover:text-red-900 mr-4"
-                        >
-                          Delete
-                        </button>
-                        {book.available_quantity > 0 && (
-                          <button
-                            onClick={() => handleBorrow(book)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Borrow
-                          </button>
-                        )}
-                      </td>
+                      {renderActionButtons(book)}
                     </tr>
                   ))}
                 </tbody>
