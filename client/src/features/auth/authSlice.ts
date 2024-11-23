@@ -16,8 +16,18 @@ interface AuthState {
   error: string | null;
 }
 
+const getUserFromStorage = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
+};
+
 const initialState: AuthState = {
-  user: null,
+  user: getUserFromStorage(),
   token: localStorage.getItem('token'),
   loading: false,
   error: null,
@@ -49,6 +59,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
     },
   },
   extraReducers: (builder) => {
