@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react';
 import api from '../../services/api';
 
@@ -15,30 +17,31 @@ interface BookFormProps {
 }
 
 const BookForm = ({ initialData, onSuccess, onCancel }: BookFormProps) => {
-  const [title, setTitle] = useState(initialData?.title || '');
-  const [author, setAuthor] = useState(initialData?.author || '');
-  const [isbn, setIsbn] = useState(initialData?.isbn || '');
-  const [quantity, setQuantity] = useState(initialData?.quantity || 1);
-  const [book_category, setBookCategory] = useState(initialData?.book_category || '');
+  const [formData, setFormData] = useState({
+    title: initialData?.title || '',
+    author: initialData?.author || '',
+    isbn: initialData?.isbn || '',
+    quantity: initialData?.quantity || 1,
+    book_category: initialData?.book_category || ''
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: name === 'quantity' ? parseInt(value) || 0 : value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     try {
-      const bookData = {
-        title,
-        author,
-        isbn,
-        quantity,
-        book_category,
-      };
-
       if (initialData?.id) {
-        await api.put(`/books/${initialData.id}`, bookData);
+        await api.put(`/books/${initialData.id}`, formData);
       } else {
-        await api.post('/books', bookData);
+        await api.post('/books', formData);
       }
-      
       onSuccess();
     } catch (error) {
       console.error('Error saving book:', error);
@@ -46,71 +49,101 @@ const BookForm = ({ initialData, onSuccess, onCancel }: BookFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Title</label>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg px-8 pt-6 pb-8">
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="title">
+          Title
+        </label>
         <input
+          className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
+          id="title"
           type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Enter book title"
+          name="title"
+          value={formData.title}
+          onChange={handleChange}
           required
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Author</label>
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="author">
+          Author
+        </label>
         <input
+          className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
+          id="author"
           type="text"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Enter author name"
+          name="author"
+          value={formData.author}
+          onChange={handleChange}
           required
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">ISBN</label>
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="isbn">
+          ISBN
+        </label>
         <input
+          className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
+          id="isbn"
           type="text"
-          value={isbn}
-          onChange={(e) => setIsbn(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Enter ISBN"
+          name="isbn"
+          value={formData.isbn}
+          onChange={handleChange}
           required
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Quantity</label>
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="quantity">
+          Quantity
+        </label>
         <input
+          className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
+          id="quantity"
           type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+          placeholder="Enter quantity"
+          name="quantity"
+          value={formData.quantity}
+          onChange={handleChange}
           min="0"
           required
         />
       </div>
       
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="book_category">
           Category
         </label>
         <input
+          className="appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 transition duration-300"
+          id="book_category"
           type="text"
-          value={book_category}
-          onChange={(e) => setBookCategory(e.target.value)}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          placeholder="Enter book category"
+          name="book_category"
+          value={formData.book_category}
+          onChange={handleChange}
           required
         />
       </div>
       
-      <div className="mt-4">
-        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Save
-        </button>
-        <button type="button" onClick={onCancel} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded ml-2">
+      <div className="flex items-center justify-end space-x-4">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-gray-600 hover:text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300"
+        >
           Cancel
+        </button>
+        <button
+          className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105"
+          type="submit"
+        >
+          {initialData ? 'Save Changes' : 'Add Book'}
         </button>
       </div>
     </form>
