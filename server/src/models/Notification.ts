@@ -9,7 +9,7 @@ export interface NotificationAttributes {
   userId: string;
   title: string;
   message: string;
-  type: 'overdue' | 'reminder' | 'return' | 'book_request' | 'request_approved' | 'request_rejected';
+  type: 'book_request' | 'request_approved' | 'request_rejected' | 'overdue' | 'reminder' | 'return' | 'acquisition_started' | 'acquisition_completed';
   read: boolean;
   borrowId?: string | null;
   bookRequestId?: string | null;
@@ -27,7 +27,7 @@ class Notification extends Model<NotificationAttributes, NotificationCreationAtt
   public userId!: string;
   public title!: string;
   public message!: string;
-  public type!: 'overdue' | 'reminder' | 'return' | 'book_request' | 'request_approved' | 'request_rejected';
+  public type!: 'book_request' | 'request_approved' | 'request_rejected' | 'overdue' | 'reminder' | 'return' | 'acquisition_started' | 'acquisition_completed';
   public read!: boolean;
   public borrowId!: string | null;
   public bookRequestId!: string | null;
@@ -60,12 +60,14 @@ Notification.init(
     },
     type: {
       type: DataTypes.ENUM(
-        'overdue', 
-        'reminder', 
-        'return', 
-        'book_request', 
-        'request_approved', 
-        'request_rejected'
+        'book_request',
+        'request_approved',
+        'request_rejected',
+        'overdue',
+        'reminder',
+        'return',
+        'acquisition_started',
+        'acquisition_completed'
       ),
       allowNull: false,
     },

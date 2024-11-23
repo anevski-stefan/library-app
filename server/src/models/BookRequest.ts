@@ -7,7 +7,7 @@ class BookRequest extends Model {
   public title!: string;
   public author!: string;
   public external_link?: string;
-  public status!: 'pending' | 'approved' | 'rejected';
+  public status!: 'pending' | 'in_progress' | 'approved' | 'rejected' | 'completed';
   public admin_comment?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
@@ -48,7 +48,7 @@ BookRequest.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      type: DataTypes.ENUM('pending', 'in_progress', 'approved', 'rejected', 'completed'),
       defaultValue: 'pending',
     },
     admin_comment: {

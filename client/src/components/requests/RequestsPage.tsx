@@ -8,7 +8,7 @@ interface BookRequest {
   id: string;
   title: string;
   author: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'in_progress' | 'approved' | 'rejected';
   external_link?: string;
   admin_comment?: string;
   user: {
@@ -22,7 +22,22 @@ const RequestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rejectModalRequest, setRejectModalRequest] = useState<BookRequest | null>(null);
+  const [activeTab, setActiveTab] = useState<'pending' | 'in_progress' | 'approved' | 'rejected'>('pending');
   const { user } = useAppSelector((state) => state.auth);
+
+  const groupedRequests = {
+    pending: requests.filter(req => req.status === 'pending'),
+    in_progress: requests.filter(req => req.status === 'in_progress'),
+    approved: requests.filter(req => req.status === 'approved'),
+    rejected: requests.filter(req => req.status === 'rejected')
+  };
+
+  const tabs = [
+    { id: 'pending', label: 'Pending' },
+    { id: 'in_progress', label: 'Acquisition In Progress' },
+    { id: 'approved', label: 'Approved' },
+    { id: 'rejected', label: 'Declined' }
+  ] as const;
 
   useEffect(() => {
     fetchRequests();
@@ -60,6 +75,107 @@ const RequestsPage = () => {
     }
   };
 
+  const handleStartAcquisition = async (request: BookRequest) => {
+    try {
+      await api.put(`/book-requests/${request.id}/start-acquisition`);
+      fetchRequests();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to start acquisition');
+    }
+  };
+
+  const handleComplete = async (request: BookRequest) => {
+    try {
+      await api.put(`/book-requests/${request.id}/complete-acquisition`);
+      fetchRequests();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to complete acquisition');
+      showNotification({
+        title: 'Error',
+        message: 'Failed to complete acquisition',
+        type: 'error'
+      });
+    }
+  };
+
+  const RequestList = ({ requests }: { requests: BookRequest[] }) => (
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+      {requests.length === 0 ? (
+        <div className="p-4 text-gray-500">No requests found in this category.</div>
+      ) : (
+        <ul className="divide-y divide-gray-200">
+          {requests.map((request) => (
+            <li key={request.id} className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">{request.title}</h3>
+                  <p className="text-sm text-gray-500">by {request.author}</p>
+                  <p className="text-sm text-gray-500">
+                    Requested by: {request.user.firstName} {request.user.lastName}
+                  </p>
+                  {request.external_link && (
+                    <a
+                      href={request.external_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      External Link
+                    </a>
+                  )}
+                  {request.admin_comment && (
+                    <p className="text-sm text-gray-500">
+                      Comment: {request.admin_comment}
+                    </p>
+                  )}
+                </div>
+                
+                {request.status === 'pending' && (
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => handleApprove(request)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => setRejectModalRequest(request)}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+
+                {request.status === 'approved' && (
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => handleStartAcquisition(request)}
+                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    >
+                      Start Acquisition
+                    </button>
+                  </div>
+                )}
+
+                {request.status === 'in_progress' && (
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => handleComplete(request)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                      Complete Acquisition
+                    </button>
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
   if (!user) {
     return <div className="p-4">Please log in to view requests.</div>;
   }
@@ -84,64 +200,32 @@ const RequestsPage = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Book Requests</h1>
 
-      {requests.length === 0 ? (
-        <div className="bg-white shadow rounded-lg p-4">
-          No book requests found.
-        </div>
-      ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <ul className="divide-y divide-gray-200">
-            {requests.map((request) => (
-              <li key={request.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">{request.title}</h3>
-                    <p className="text-sm text-gray-500">by {request.author}</p>
-                    <p className="text-sm text-gray-500">
-                      Requested by: {request.user.firstName} {request.user.lastName}
-                    </p>
-                    {request.external_link && (
-                      <a
-                        href={request.external_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        External Link
-                      </a>
-                    )}
-                    <p className="text-sm text-gray-500">
-                      Status: <span className="font-medium">{request.status}</span>
-                    </p>
-                    {request.admin_comment && (
-                      <p className="text-sm text-gray-500">
-                        Comment: {request.admin_comment}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {request.status === 'pending' && (
-                    <div className="flex space-x-4">
-                      <button
-                        onClick={() => handleApprove(request)}
-                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => setRejectModalRequest(request)}
-                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`
+                whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                ${activeTab === id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              {label}
+              <span className="ml-2 bg-gray-100 text-gray-700 py-0.5 px-2.5 rounded-full text-xs">
+                {groupedRequests[id].length}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Content */}
+      <RequestList requests={groupedRequests[activeTab]} />
 
       {rejectModalRequest && (
         <RejectRequestModal

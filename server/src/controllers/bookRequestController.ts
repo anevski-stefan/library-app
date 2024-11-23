@@ -152,4 +152,94 @@ export const rejectBookRequest = async (req: Request, res: Response) => {
     console.error('Reject book request error:', error);
     res.status(500).json({ message: 'Error rejecting book request' });
   }
+};
+
+export const startAcquisition = async (req: Request, res: Response) => {
+  try {
+    const request = await BookRequest.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'first_name', 'last_name']
+      }]
+    });
+
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    if (request.status !== 'approved') {
+      return res.status(400).json({ 
+        message: 'Only approved requests can be moved to acquisition process' 
+      });
+    }
+    
+    await request.update({ status: 'in_progress' });
+
+    // Send notification to the user
+    await Notification.create({
+      userId: request.user_id,
+      title: 'Book Acquisition Started',
+      message: `We have started the acquisition process for "${request.title}"`,
+      type: 'acquisition_started',
+      bookRequestId: request.id
+    });
+
+    // Send WebSocket notification
+    wsService.sendNotification(request.user_id, {
+      title: 'Book Acquisition Started',
+      message: `We have started the acquisition process for "${request.title}"`,
+      type: 'acquisition_started',
+      bookRequestId: request.id
+    });
+
+    res.json(request);
+  } catch (error) {
+    console.error('Start acquisition error:', error);
+    res.status(500).json({ message: 'Error starting acquisition process' });
+  }
+};
+
+export const completeAcquisition = async (req: Request, res: Response) => {
+  try {
+    const request = await BookRequest.findByPk(req.params.id);
+
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    if (request.status !== 'in_progress') {
+      return res.status(400).json({ message: 'Request is not in acquisition process' });
+    }
+    
+    await request.update({ status: 'completed' });
+
+    // Debug log
+    console.log('Request details:', {
+      requestUserId: request.user_id,
+      adminId: req.user?.id
+    });
+
+    // Send notification to the requesting user
+    await Notification.create({
+      userId: request.user_id,  // Using user_id directly from the request
+      title: 'Book Acquisition Completed',
+      message: `Great news! Your requested book "${request.title}" has been acquired and will be available in the library soon.`,
+      type: 'acquisition_completed',
+      bookRequestId: request.id
+    });
+
+    // Send WebSocket notification to the requesting user
+    wsService.sendNotification(request.user_id, {
+      title: 'Book Acquisition Completed',
+      message: `Great news! Your requested book "${request.title}" has been acquired and will be available in the library soon.`,
+      type: 'acquisition_completed',
+      bookRequestId: request.id
+    });
+
+    res.json(request);
+  } catch (error) {
+    console.error('Complete acquisition error:', error);
+    res.status(500).json({ message: 'Error completing acquisition process' });
+  }
 }; 
