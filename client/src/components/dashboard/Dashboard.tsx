@@ -62,17 +62,15 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [statsResponse, borrowsResponse, booksResponse] = await Promise.all([
-        api.get('/api/books/stats'),
-        api.get('/api/borrows/user'),
-        api.get('/api/books')
-      ]);
-      
-      console.log('Books response:', booksResponse.data);
-      
+      const statsResponse = await api.get('/books/stats');
       setStats(statsResponse.data);
+
+      const borrowsResponse = await api.get('/borrows/user');
       setRecentBorrows(borrowsResponse.data);
+
+      const booksResponse = await api.get('/books');
       setBooks(booksResponse.data);
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -133,69 +131,62 @@ export default function Dashboard() {
       </div>
       
       {/* Main Content */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
-        {/* Recently Added Books */}
-        <div className="bg-white p-6 rounded-lg shadow md:col-span-1 lg:col-span-4">
+      <div className="space-y-8">
+        {/* Recent Borrows */}
+        <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Recent Borrows</h2>
           <div className="space-y-4">
             {recentBorrows.map((borrow) => (
-              <div key={borrow.id} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Book className="h-9 w-9 text-gray-400" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium">{borrow.book.title}</p>
-                    <p className="text-sm text-gray-500">{borrow.book.author}</p>
-                  </div>
+              <div key={borrow.id} className="flex items-center">
+                <Book className="h-9 w-9 text-gray-400" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium">{borrow.book.title}</p>
+                  <p className="text-sm text-gray-500">{borrow.book.author}</p>
                 </div>
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                  ${borrow.status === 'borrowed' ? 'bg-yellow-100 text-yellow-800' : 
-                    borrow.status === 'returned' ? 'bg-green-100 text-green-800' : 
-                    'bg-red-100 text-red-800'}`}>
-                  {borrow.status}
-                </span>
               </div>
             ))}
           </div>
         </div>
         
-        {/* Book Inventory */}
-        <div className="space-y-4 md:col-span-1 lg:col-span-3">
+        {/* Book Inventory - Now full width */}
+        <div className="space-y-4">
           <h2 className="text-2xl font-bold">Book Inventory</h2>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Genre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {books && books.length > 0 ? (
-                  books.map((book) => (
-                    <tr key={book.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.author}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.book_category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          book.available_quantity > 0 ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {book.available_quantity > 0 ? "Available" : "Checked Out"}
-                        </span>
+          <div className="bg-white rounded-lg shadow">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase">Title</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase">Author</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase">Genre</th>
+                    <th className="text-left p-4 text-xs font-medium text-gray-500 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {books.map((book) => (
+                    <tr key={book.id} className="border-b border-gray-200">
+                      <td className="p-4 text-sm text-gray-900 whitespace-nowrap">{book.title}</td>
+                      <td className="p-4 text-sm text-gray-500 whitespace-nowrap">{book.author}</td>
+                      <td className="p-4 text-sm text-gray-500 whitespace-nowrap">{book.book_category}</td>
+                      <td className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <div className={`inline-block rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap ${
+                            book.available_quantity > 0
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {book.available_quantity > 0 ? "Available" : "Not Available"}
+                          </div>
+                          <span className="text-sm text-gray-500 whitespace-nowrap">
+                            ({book.available_quantity}/{book.quantity})
+                          </span>
+                        </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No books found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database';
-import User from './User';
 import Book from './Book';
 
 export interface BorrowAttributes {
@@ -38,18 +37,10 @@ Borrow.init(
     userId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: User,
-        key: 'id',
-      },
     },
     bookId: {
       type: DataTypes.UUID,
       allowNull: false,
-      references: {
-        model: Book,
-        key: 'id',
-      },
     },
     borrowDate: {
       type: DataTypes.DATE,
@@ -73,7 +64,13 @@ Borrow.init(
   {
     sequelize,
     tableName: 'borrows',
+    underscored: true,
   }
 );
+
+Borrow.belongsTo(Book, {
+  foreignKey: 'bookId',
+  as: 'book'
+});
 
 export default Borrow; 

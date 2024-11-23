@@ -105,7 +105,11 @@ export const getUserBorrows = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const borrows = await Borrow.findAll({
       where: { userId },
-      include: [Book],
+      include: [{
+        model: Book,
+        as: 'book',
+        attributes: ['title', 'author']
+      }],
       order: [['borrowDate', 'DESC']],
     });
     res.json(borrows);
