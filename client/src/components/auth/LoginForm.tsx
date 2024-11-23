@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '../../store/hooks';
 import { login } from '../../features/auth/authSlice';
 import { BookOpen } from 'lucide-react';
@@ -10,6 +10,8 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const successMessage = location.state?.message;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,12 @@ const LoginForm = () => {
             {error && (
               <div className="rounded-md bg-red-50 p-4">
                 <div className="text-sm text-red-700">{error}</div>
+              </div>
+            )}
+            
+            {successMessage && (
+              <div className="rounded-md bg-green-50 p-4">
+                <div className="text-sm text-green-700">{successMessage}</div>
               </div>
             )}
             
@@ -90,7 +98,7 @@ const LoginForm = () => {
 
         <div className="px-6 py-4 bg-amber-100 border-t border-amber-200">
           <div className="flex flex-col space-y-2">
-            <Link to="#" className="text-sm text-amber-600 hover:text-amber-500">
+            <Link to="/forgot-password" className="text-sm text-amber-600 hover:text-amber-500">
               Forgot your password?
             </Link>
             <Link to="/register" className="text-sm text-amber-600 hover:text-amber-500">

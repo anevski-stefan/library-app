@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { createServer } from 'http';
 import { wsService } from './services/websocketService';
 import { sequelize } from './config/database';
@@ -13,7 +14,27 @@ import { startScheduledTasks } from './utils/scheduler';
 import User from './models/User';
 import BookRequest from './models/BookRequest';
 
-dotenv.config();
+// Load environment variables from single .env file
+const envPath = path.join(__dirname, '..', '.env');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.error('Error loading .env file:', result.error);
+  process.exit(1);
+}
+
+// Log loaded configuration (safely)
+console.log('Environment loaded:', {
+  // Database
+  DB_HOST_EXISTS: !!process.env.DB_HOST,
+  DB_USER_EXISTS: !!process.env.DB_USER,
+  DB_NAME_EXISTS: !!process.env.DB_NAME,
+  // Email
+  SMTP_USER_EXISTS: !!process.env.SMTP_USER,
+  SMTP_PASS_EXISTS: !!process.env.SMTP_PASS,
+  SMTP_FROM_EXISTS: !!process.env.SMTP_FROM,
+  CLIENT_URL_EXISTS: !!process.env.CLIENT_URL
+});
 
 const app = express();
 const httpServer = createServer(app);

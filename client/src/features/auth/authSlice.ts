@@ -89,6 +89,34 @@ export const register = createAsyncThunk(
   }
 );
 
+export const forgotPassword = createAsyncThunk(
+  'auth/forgotPassword',
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  'auth/resetPassword',
+  async (data: { token: string; newPassword: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/reset-password', {
+        token: data.token,
+        newPassword: data.newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to reset password';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -132,6 +160,30 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Registration failed';
         state.isAuthenticated = false;
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to process request';
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to reset password';
       });
   },
 });

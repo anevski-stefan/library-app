@@ -8,6 +8,8 @@ export interface UserAttributes {
   firstName: string;
   lastName: string;
   role: 'admin' | 'librarian' | 'member';
+  resetToken?: string | null;
+  resetTokenExpiry?: Date | null;
 }
 
 export type UserCreationAttributes = Omit<UserAttributes, 'id'>;
@@ -19,6 +21,8 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public firstName!: string;
   public lastName!: string;
   public role!: 'admin' | 'librarian' | 'member';
+  public resetToken?: string | null;
+  public resetTokenExpiry?: Date | null;
 
   static associate(models: any) {
     User.hasMany(models.BookRequest, {
@@ -57,6 +61,14 @@ User.init(
     role: {
       type: DataTypes.ENUM('admin', 'librarian', 'member'),
       defaultValue: 'member',
+    },
+    resetToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetTokenExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
   {
