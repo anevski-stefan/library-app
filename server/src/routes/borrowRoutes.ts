@@ -8,8 +8,8 @@ import {
 
 const router = express.Router();
 
-router.post('/', auth(['member', 'librarian']), borrowBook);
-router.put('/:borrowId/return', auth(['member', 'librarian']), returnBook);
+router.post('/', auth(['member', 'librarian', 'admin']), borrowBook);
+router.put('/:borrowId/return', auth(['member', 'librarian', 'admin']), returnBook);
 router.get('/user', auth(), getUserBorrows);
 
 export default router; 

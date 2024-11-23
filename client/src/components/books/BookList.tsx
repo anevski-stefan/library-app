@@ -3,6 +3,7 @@ import api from '../../services/api';
 import BookForm from './BookForm';
 import BorrowModal from './BorrowModal';
 import BookScanner from './BookScanner';
+import { useAppSelector } from '../../store/hooks';
 
 interface Book {
     id: string;
@@ -28,6 +29,9 @@ const BookList = () => {
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
   const [bookToBorrow, setBookToBorrow] = useState<Book | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const { user } = useAppSelector((state) => state.auth);
+
+  console.log('Current user role:', user?.role);
 
   useEffect(() => {
     fetchBooks();
@@ -90,6 +94,8 @@ const BookList = () => {
   });
 
   const categories = [...new Set(books.map(book => book.book_category))];
+
+  console.log('Current user:', user);
 
   if (loading) {
     return (

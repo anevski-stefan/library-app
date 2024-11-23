@@ -35,11 +35,21 @@ const initialState: AuthState = {
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }) => {
-    const response = await api.post('/auth/login', credentials);
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    return response.data;
+  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      const { token, user } = response.data;
+      
+      console.log('Login successful:', {
+        token: token.substring(0, 20) + '...',
+        user
+      });
+      
+      localStorage.setItem('token', token);
+      return { token, user };
+    } catch (error: any) {
+      return rejectWithValue(error.response.data);
+    }
   }
 );
 

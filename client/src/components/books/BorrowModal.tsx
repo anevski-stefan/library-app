@@ -10,17 +10,28 @@ interface BorrowModalProps {
 
 const BorrowModal = ({ bookId, bookTitle, onSuccess, onClose }: BorrowModalProps) => {
   const [returnDate, setReturnDate] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
     try {
       await api.post('/borrows', {
         bookId,
         returnDate: new Date(returnDate)
       });
       onSuccess();
-    } catch (error) {
-      console.error('Error borrowing book:', error);
+    } catch (error: any) {
+      console.error('Borrow error:', error.response?.data);
+      const errorMessage = error.response?.data?.message 
+        || 'Error borrowing book. Please try again.';
+      setError(`${errorMessage} ${error.response?.status === 403 ? 
+        '(Permission denied - contact administrator)' : ''}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -29,6 +40,11 @@ const BorrowModal = ({ bookId, bookTitle, onSuccess, onClose }: BorrowModalProps
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
         <h2 className="text-xl font-bold mb-4">Borrow Book</h2>
         <p className="mb-6">Book: {bookTitle}</p>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg">
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -48,14 +64,16 @@ const BorrowModal = ({ bookId, bookTitle, onSuccess, onClose }: BorrowModalProps
               type="button"
               onClick={onClose}
               className="text-gray-600 hover:text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105 disabled:opacity-50"
+              disabled={isSubmitting}
             >
-              Borrow
+              {isSubmitting ? 'Borrowing...' : 'Borrow'}
             </button>
           </div>
         </form>
