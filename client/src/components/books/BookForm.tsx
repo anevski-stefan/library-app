@@ -22,15 +22,28 @@ const BookForm = ({ initialData, onSuccess, onCancel }: BookFormProps) => {
     author: initialData?.author || '',
     isbn: initialData?.isbn || '',
     quantity: initialData?.quantity || 1,
+    available_quantity: initialData?.quantity || 1,
     book_category: initialData?.book_category || ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: name === 'quantity' ? parseInt(value) || 0 : value
-    }));
+    
+    setFormData(prevState => {
+      if (name === 'quantity') {
+        const numValue = parseInt(value) || 0;
+        return {
+          ...prevState,
+          quantity: numValue,
+          available_quantity: numValue
+        };
+      }
+      
+      return {
+        ...prevState,
+        [name]: value
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

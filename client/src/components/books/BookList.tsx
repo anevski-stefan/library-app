@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import BookForm from './BookForm';
 import BorrowModal from './BorrowModal';
+import BookScanner from './BookScanner';
 
 interface Book {
     id: string;
@@ -26,6 +27,7 @@ const BookList = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
   const [bookToBorrow, setBookToBorrow] = useState<Book | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
     fetchBooks();
@@ -109,12 +111,20 @@ const BookList = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Books</h1>
-        <button 
-          onClick={() => setIsFormOpen(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Add New Book
-        </button>
+        <div className="flex space-x-4">
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Add New Book
+          </button>
+          <button 
+            onClick={() => setIsScannerOpen(true)}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2"
+          >
+            Scan Book
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 flex space-x-4">
@@ -223,6 +233,16 @@ const BookList = () => {
             setIsBorrowModalOpen(false);
             setBookToBorrow(null);
           }}
+        />
+      )}
+
+      {isScannerOpen && (
+        <BookScanner
+          onSuccess={() => {
+            setIsScannerOpen(false);
+            fetchBooks();
+          }}
+          onClose={() => setIsScannerOpen(false)}
         />
       )}
     </div>

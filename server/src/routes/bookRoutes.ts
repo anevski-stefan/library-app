@@ -6,7 +6,8 @@ import {
   getBookById,
   updateBook,
   deleteBook,
-  getBookStats
+  getBookStats,
+  getBookByIsbn
 } from '../controllers/bookController';
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get('/:id', getBookById);
 router.post('/', auth(['admin', 'librarian']), createBook);
 router.put('/:id', auth(['admin', 'librarian']), updateBook);
 router.delete('/:id', auth(['admin']), deleteBook);
+router.get('/isbn/:isbn', getBookByIsbn);
 
 export default router; 
