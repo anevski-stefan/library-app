@@ -45,11 +45,6 @@ const RequestsPage = () => {
     try {
       await api.put(`/book-requests/${request.id}/approve`);
       fetchRequests();
-      showNotification({
-        title: 'Request Approved',
-        message: `Request for "${request.title}" has been approved.`,
-        type: 'request_approved',
-      });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to approve request');
     }
@@ -60,11 +55,6 @@ const RequestsPage = () => {
       await api.put(`/book-requests/${requestId}/reject`, { comment });
       setRejectModalRequest(null);
       fetchRequests();
-      showNotification({
-        title: 'Request Rejected',
-        message: `Request rejected successfully.`,
-        type: 'request_rejected',
-      });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to reject request');
     }

@@ -70,12 +70,38 @@ export const getAllBookRequests = async (req: Request, res: Response) => {
 
 export const approveBookRequest = async (req: Request, res: Response) => {
   try {
-    const request = await BookRequest.findByPk(req.params.id);
+    const request = await BookRequest.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'first_name', 'last_name']
+      }]
+    });
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
     
     await request.update({ status: 'approved' });
+
+    // Send notification to the user who made the request
+    await Notification.create({
+      userId: request.user_id,
+      title: 'Book Request Approved',
+      message: `Your request for "${request.title}" has been approved!`,
+      type: 'request_approved',
+      bookRequestId: request.id,
+      read: false
+    });
+
+    // Send WebSocket notification to the user
+    wsService.sendNotification(request.user_id, {
+      title: 'Book Request Approved',
+      message: `Your request for "${request.title}" has been approved!`,
+      type: 'request_approved',
+      bookRequestId: request.id
+    });
+
     res.json(request);
   } catch (error) {
     console.error('Approve book request error:', error);
@@ -86,7 +112,14 @@ export const approveBookRequest = async (req: Request, res: Response) => {
 export const rejectBookRequest = async (req: Request, res: Response) => {
   try {
     const { comment } = req.body;
-    const request = await BookRequest.findByPk(req.params.id);
+    const request = await BookRequest.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'first_name', 'last_name']
+      }]
+    });
+
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
@@ -95,6 +128,25 @@ export const rejectBookRequest = async (req: Request, res: Response) => {
       status: 'rejected',
       admin_comment: comment
     });
+
+    // Send notification to the user who made the request
+    await Notification.create({
+      userId: request.user_id,
+      title: 'Book Request Rejected',
+      message: `Your request for "${request.title}" has been rejected. Reason: ${comment}`,
+      type: 'request_rejected',
+      bookRequestId: request.id,
+      read: false
+    });
+
+    // Send WebSocket notification to the user
+    wsService.sendNotification(request.user_id, {
+      title: 'Book Request Rejected',
+      message: `Your request for "${request.title}" has been rejected. Reason: ${comment}`,
+      type: 'request_rejected',
+      bookRequestId: request.id
+    });
+
     res.json(request);
   } catch (error) {
     console.error('Reject book request error:', error);
