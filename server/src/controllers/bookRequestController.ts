@@ -3,11 +3,40 @@ import BookRequest from '../models/BookRequest';
 import User from '../models/User';
 import { wsService } from '../services/websocketService';
 import Notification from '../models/Notification';
+import { sendEmail } from '../services/emailService';
+
+// Define the shape of the included user data
+interface IncludedUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+// Define a type for the book request with included user
+type BookRequestWithUser = Omit<BookRequest, 'user'> & {
+  user: IncludedUser;
+  user_id: string;
+};
+
+// Helper function to safely convert User model to IncludedUser
+function toIncludedUser(user: any): IncludedUser {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
+  };
+}
 
 export const createBookRequest = async (req: Request, res: Response) => {
   try {
     const { title, author, external_link } = req.body;
     const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
     const bookRequest = await BookRequest.create({
       user_id: userId,
@@ -24,24 +53,40 @@ export const createBookRequest = async (req: Request, res: Response) => {
       }
     });
 
-    // Create notifications for each admin
+    const notificationMessage = `New book request: "${title}" by ${author}`;
+
+    // Create notifications and send emails for each admin
     for (const admin of adminUsers) {
+      // Create notification
       await Notification.create({
-        userId: admin.id,
+        userId: admin.get('id'),
         title: 'New Book Request',
-        message: `New book request: "${title}" by ${author}`,
+        message: notificationMessage,
         type: 'book_request',
         read: false,
-        bookRequestId: bookRequest.id
+        bookRequestId: bookRequest.get('id')
       });
 
       // Send WebSocket notification
-      wsService.sendNotification(admin.id, {
+      wsService.sendNotification(admin.get('id'), {
         title: 'New Book Request',
-        message: `New book request: "${title}" by ${author}`,
+        message: notificationMessage,
         type: 'book_request',
-        bookRequestId: bookRequest.id
+        bookRequestId: bookRequest.get('id')
       });
+
+      // Send email notification
+      await sendEmail(
+        admin.get('email'),
+        'New Book Request',
+        `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color: #B45309;">New Book Request</h2>
+          <p>${notificationMessage}</p>
+          <p>Please log in to the system to review this request.</p>
+        </div>
+        `
+      );
     }
 
     res.status(201).json(bookRequest);
@@ -74,33 +119,55 @@ export const approveBookRequest = async (req: Request, res: Response) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'first_name', 'last_name']
+        attributes: ['id', 'firstName', 'lastName', 'email']
       }]
     });
 
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
+
+    const userData = request.get('user');
+    if (!userData) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = toIncludedUser(userData);
     
     await request.update({ status: 'approved' });
 
-    // Send notification to the user who made the request
+    const notificationMessage = `Your request for "${request.get('title')}" has been approved!`;
+
+    // Create notification
     await Notification.create({
-      userId: request.user_id,
+      userId: request.get('user_id'),
       title: 'Book Request Approved',
-      message: `Your request for "${request.title}" has been approved!`,
+      message: notificationMessage,
       type: 'request_approved',
-      bookRequestId: request.id,
+      bookRequestId: request.get('id'),
       read: false
     });
 
-    // Send WebSocket notification to the user
-    wsService.sendNotification(request.user_id, {
+    // Send WebSocket notification
+    wsService.sendNotification(request.get('user_id'), {
       title: 'Book Request Approved',
-      message: `Your request for "${request.title}" has been approved!`,
+      message: notificationMessage,
       type: 'request_approved',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
+
+    // Send email notification
+    await sendEmail(
+      user.email,
+      'Book Request Approved',
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #B45309;">Book Request Approved</h2>
+        <p>${notificationMessage}</p>
+        <p>We will notify you once the book acquisition process begins.</p>
+      </div>
+      `
+    );
 
     res.json(request);
   } catch (error) {
@@ -116,36 +183,58 @@ export const rejectBookRequest = async (req: Request, res: Response) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'first_name', 'last_name']
+        attributes: ['id', 'firstName', 'lastName', 'email']
       }]
     });
 
     if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
+
+    const userData = request.get('user');
+    if (!userData) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = toIncludedUser(userData);
     
     await request.update({ 
       status: 'rejected',
       admin_comment: comment
     });
 
-    // Send notification to the user who made the request
+    const notificationMessage = `Your request for "${request.get('title')}" has been rejected. Reason: ${comment}`;
+
+    // Create notification
     await Notification.create({
-      userId: request.user_id,
+      userId: request.get('user_id'),
       title: 'Book Request Rejected',
-      message: `Your request for "${request.title}" has been rejected. Reason: ${comment}`,
+      message: notificationMessage,
       type: 'request_rejected',
-      bookRequestId: request.id,
+      bookRequestId: request.get('id'),
       read: false
     });
 
-    // Send WebSocket notification to the user
-    wsService.sendNotification(request.user_id, {
+    // Send WebSocket notification
+    wsService.sendNotification(request.get('user_id'), {
       title: 'Book Request Rejected',
-      message: `Your request for "${request.title}" has been rejected. Reason: ${comment}`,
+      message: notificationMessage,
       type: 'request_rejected',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
+
+    // Send email notification
+    await sendEmail(
+      user.email,
+      'Book Request Rejected',
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #B45309;">Book Request Rejected</h2>
+        <p>${notificationMessage}</p>
+        <p>If you have any questions, please contact the library staff.</p>
+      </div>
+      `
+    );
 
     res.json(request);
   } catch (error) {
@@ -160,15 +249,17 @@ export const startAcquisition = async (req: Request, res: Response) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'first_name', 'last_name']
+        attributes: ['id', 'first_name', 'last_name', 'email']
       }]
     });
 
-    if (!request) {
+    if (!request || !request.get('user')) {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    if (request.status !== 'approved') {
+    const user = request.get('user') as IncludedUser;
+
+    if (request.get('status') !== 'approved') {
       return res.status(400).json({ 
         message: 'Only approved requests can be moved to acquisition process' 
       });
@@ -176,22 +267,36 @@ export const startAcquisition = async (req: Request, res: Response) => {
     
     await request.update({ status: 'in_progress' });
 
+    const notificationMessage = `We have started the acquisition process for "${request.get('title')}"`;
+
     // Send notification to the user
     await Notification.create({
-      userId: request.user_id,
+      userId: request.get('user_id'),
       title: 'Book Acquisition Started',
-      message: `We have started the acquisition process for "${request.title}"`,
+      message: notificationMessage,
       type: 'acquisition_started',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
 
     // Send WebSocket notification
-    wsService.sendNotification(request.user_id, {
+    wsService.sendNotification(request.get('user_id'), {
       title: 'Book Acquisition Started',
-      message: `We have started the acquisition process for "${request.title}"`,
+      message: notificationMessage,
       type: 'acquisition_started',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
+
+    // Send email notification
+    await sendEmail(
+      user.email,
+      'Book Acquisition Started',
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #B45309;">Book Acquisition Started</h2>
+        <p>${notificationMessage}</p>
+      </div>
+      `
+    );
 
     res.json(request);
   } catch (error) {
@@ -202,40 +307,56 @@ export const startAcquisition = async (req: Request, res: Response) => {
 
 export const completeAcquisition = async (req: Request, res: Response) => {
   try {
-    const request = await BookRequest.findByPk(req.params.id);
+    const request = await BookRequest.findByPk(req.params.id, {
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'first_name', 'last_name', 'email']
+      }]
+    });
 
-    if (!request) {
+    if (!request || !request.get('user')) {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    if (request.status !== 'in_progress') {
+    const user = request.get('user') as IncludedUser;
+
+    if (request.get('status') !== 'in_progress') {
       return res.status(400).json({ message: 'Request is not in acquisition process' });
     }
     
     await request.update({ status: 'completed' });
 
-    // Debug log
-    console.log('Request details:', {
-      requestUserId: request.user_id,
-      adminId: req.user?.id
-    });
+    const notificationMessage = `Great news! Your requested book "${request.get('title')}" has been acquired and will be available in the library soon.`;
 
     // Send notification to the requesting user
     await Notification.create({
-      userId: request.user_id,  // Using user_id directly from the request
+      userId: request.get('user_id'),
       title: 'Book Acquisition Completed',
-      message: `Great news! Your requested book "${request.title}" has been acquired and will be available in the library soon.`,
+      message: notificationMessage,
       type: 'acquisition_completed',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
 
-    // Send WebSocket notification to the requesting user
-    wsService.sendNotification(request.user_id, {
+    // Send WebSocket notification
+    wsService.sendNotification(request.get('user_id'), {
       title: 'Book Acquisition Completed',
-      message: `Great news! Your requested book "${request.title}" has been acquired and will be available in the library soon.`,
+      message: notificationMessage,
       type: 'acquisition_completed',
-      bookRequestId: request.id
+      bookRequestId: request.get('id')
     });
+
+    // Send email notification
+    await sendEmail(
+      user.email,
+      'Book Acquisition Completed',
+      `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #B45309;">Book Acquisition Completed</h2>
+        <p>${notificationMessage}</p>
+      </div>
+      `
+    );
 
     res.json(request);
   } catch (error) {
