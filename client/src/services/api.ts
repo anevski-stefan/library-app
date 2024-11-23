@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// Check if API URL is defined
+if (!import.meta.env.VITE_API_URL) {
+  console.error('VITE_API_URL is not defined in environment variables');
+}
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
 });
 
 api.interceptors.request.use((config) => {
@@ -11,5 +16,18 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Add response interceptor for handling auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api; 

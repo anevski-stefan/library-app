@@ -6,6 +6,13 @@ import User, { UserCreationAttributes } from '../models/User';
 export const register = async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
+    const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN;
+
+    if (!email.endsWith(allowedDomain)) {
+      return res.status(400).json({ 
+        message: `Registration is only allowed for emails with domain ${allowedDomain}`
+      });
+    }
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {

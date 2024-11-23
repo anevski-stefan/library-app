@@ -25,6 +25,13 @@ const RegisterForm = () => {
     e.preventDefault();
     setError('');
 
+    // Check email domain
+    const allowedDomain = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN || '@vasscompany.com';
+    if (!formData.email.endsWith(allowedDomain)) {
+      setError(`Registration is only allowed for emails with domain ${allowedDomain}`);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
