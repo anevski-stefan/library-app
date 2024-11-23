@@ -10,6 +10,7 @@ export interface BorrowAttributes {
   returnDate: Date;
   actualReturnDate?: Date;
   status: 'borrowed' | 'returned' | 'overdue';
+  book?: Book;
 }
 
 interface BorrowCreationAttributes extends Omit<BorrowAttributes, 'id' | 'borrowDate'> {

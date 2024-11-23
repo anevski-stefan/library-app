@@ -5,6 +5,8 @@ import { sequelize } from './config/database';
 import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
 import borrowRoutes from './routes/borrowRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import { startScheduledTasks } from './utils/scheduler';
 
 dotenv.config();
 
@@ -32,6 +34,7 @@ app.get('/test', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrows', borrowRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
@@ -46,6 +49,8 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
+    startScheduledTasks();
   } catch (error) {
     console.error('Unable to start server:', error);
     process.exit(1);

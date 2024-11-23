@@ -1,6 +1,7 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../features/auth/authSlice';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 const DashboardLayout = () => {
   const dispatch = useAppDispatch();
@@ -43,7 +44,8 @@ const DashboardLayout = () => {
               </div>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-700 mr-4">
+              <NotificationBell />
+              <span className="text-gray-700 mx-4">
                 {user?.firstName} {user?.lastName}
               </span>
               <button

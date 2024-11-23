@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Book, BookOpen, Users } from 'lucide-react'
+import { Search, Book, BookOpen } from 'lucide-react'
 import { useAppSelector } from '../../store/hooks'
 import api from '../../services/api'
 
@@ -131,11 +131,8 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between">
+          <div>
             <h2 className="text-sm font-medium text-gray-500">User Info</h2>
-            <Users className="h-5 w-5 text-gray-400" />
-          </div>
-          <div className="mt-2">
             <p className="text-xl font-semibold">{user?.firstName} {user?.lastName}</p>
             <p className="text-sm text-gray-500">Role: {user?.role}</p>
           </div>
