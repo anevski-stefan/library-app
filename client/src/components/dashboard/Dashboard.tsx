@@ -43,12 +43,12 @@ export default function Dashboard() {
 
   const displayStats = {
     totalBooks: {
-      value: stats?.totalBooks || 0,
-      change: `${stats?.availableBooks || 0} available`
+      value: stats?.totalBooks ?? 0,
+      change: `${stats?.availableBooks ?? 0} available`
     },
     booksRead: {
-      value: stats?.borrowedBooks || 0,
-      change: `${stats?.overdueBooks || 0} overdue`
+      value: stats?.borrowedBooks ?? 0,
+      change: `${stats?.overdueBooks ?? 0} overdue`
     },
     activeReaders: {
       value: user ? 1 : 0,
@@ -62,14 +62,13 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const statsResponse = await api.get('/books/stats');
-      setStats(statsResponse.data);
+      const booksResponse = await api.get('/books');
+      setBooks(booksResponse.data);
+      console.log('Books from API:', booksResponse.data);
 
       const borrowsResponse = await api.get('/borrows/user');
       setRecentBorrows(borrowsResponse.data);
-
-      const booksResponse = await api.get('/books');
-      setBooks(booksResponse.data);
+      console.log('Borrows from API:', borrowsResponse.data);
 
       setLoading(false);
     } catch (error) {
@@ -77,6 +76,19 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (books.length > 0) {
+      const calculatedStats = {
+        totalBooks: books.length,
+        availableBooks: books.filter(book => book.available_quantity > 0).length,
+        borrowedBooks: recentBorrows.filter(borrow => borrow.status === 'borrowed').length,
+        overdueBooks: recentBorrows.filter(borrow => borrow.status === 'overdue').length
+      };
+      console.log('Calculated stats:', calculatedStats);
+      setStats(calculatedStats);
+    }
+  }, [books, recentBorrows]);
 
   if (loading) {
     return <div>Loading...</div>;
