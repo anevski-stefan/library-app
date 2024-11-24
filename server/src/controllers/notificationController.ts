@@ -29,23 +29,37 @@ export const createOverdueNotification = async (
     });
 
     const adminEmails = await getAdminEmails();
-    const emailContent = `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h2 style="color: #B45309;">Book Overdue Alert</h2>
-      <p>A book is overdue:</p>
-      <ul>
-        <li>Book: ${bookTitle}</li>
-        <li>User ID: ${userId}</li>
-        <li>Borrow ID: ${borrowId}</li>
-      </ul>
-    </div>
-    `;
-
+    
     for (const adminEmail of adminEmails) {
       await sendEmail(
         adminEmail,
         'Book Overdue Alert',
-        emailContent
+        {
+          title: 'Book Overdue Alert',
+          heading: 'Book Overdue Notification',
+          content: `
+            <p>A book is overdue and requires attention:</p>
+            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${bookTitle}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>User ID:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${userId}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Borrow ID:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${borrowId}</td>
+              </tr>
+            </table>
+            <p>Please follow up with the user regarding the return of this book.</p>
+          `,
+          actionButton: {
+            text: 'View Borrow Details',
+            url: `${process.env.CLIENT_URL}/borrows/${borrowId}`
+          }
+        }
       );
     }
   } catch (error) {

@@ -11,6 +11,7 @@ interface IncludedUser {
   email: string;
   firstName: string;
   lastName: string;
+  role: 'admin' | 'librarian' | 'member';
 }
 
 // Define a type for the book request with included user
@@ -25,7 +26,8 @@ function toIncludedUser(user: any): IncludedUser {
     id: user.id,
     email: user.email,
     firstName: user.firstName,
-    lastName: user.lastName
+    lastName: user.lastName,
+    role: user.role
   };
 }
 
@@ -79,13 +81,46 @@ export const createBookRequest = async (req: Request, res: Response) => {
       await sendEmail(
         admin.get('email'),
         'New Book Request',
-        `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2 style="color: #B45309;">New Book Request</h2>
-          <p>${notificationMessage}</p>
-          <p>Please log in to the system to review this request.</p>
-        </div>
-        `
+        {
+          title: 'New Book Request',
+          heading: 'New Book Request Received',
+          content: `
+            <p>A new book request has been submitted:</p>
+            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${title}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Author:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${author}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Requested By:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.user?.firstName} ${req.user?.lastName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Requester Email:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.user?.email}</td>
+              </tr>
+              ${external_link ? `
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>External Link:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="${external_link}" style="color: #B45309;">${external_link}</a></td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Request Date:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${new Date().toLocaleDateString()}</td>
+              </tr>
+            </table>
+            <p>Please review this request and take appropriate action.</p>
+          `,
+          actionButton: {
+            text: 'Review Request',
+            url: `${process.env.CLIENT_URL}/requests`
+          }
+        }
       );
     }
 
@@ -160,13 +195,25 @@ export const approveBookRequest = async (req: Request, res: Response) => {
     await sendEmail(
       user.email,
       'Book Request Approved',
-      `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #B45309;">Book Request Approved</h2>
-        <p>${notificationMessage}</p>
-        <p>We will notify you once the book acquisition process begins.</p>
-      </div>
-      `
+      {
+        title: 'Book Request Approved',
+        heading: 'Book Request Status Update',
+        content: `
+          <p>Dear ${user.firstName},</p>
+          <p>${notificationMessage}</p>
+          <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('title')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Status:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">Approved</td>
+            </tr>
+          </table>
+          <p>We will notify you once the book acquisition process begins.</p>
+        `
+      }
     );
 
     res.json(request);
@@ -227,13 +274,29 @@ export const rejectBookRequest = async (req: Request, res: Response) => {
     await sendEmail(
       user.email,
       'Book Request Rejected',
-      `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #B45309;">Book Request Rejected</h2>
-        <p>${notificationMessage}</p>
-        <p>If you have any questions, please contact the library staff.</p>
-      </div>
-      `
+      {
+        title: 'Book Request Rejected',
+        heading: 'Book Request Status Update',
+        content: `
+          <p>Dear ${user.firstName},</p>
+          <p>${notificationMessage}</p>
+          <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('title')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Status:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">Rejected</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Reason:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${comment}</td>
+            </tr>
+          </table>
+          <p>If you have any questions, please contact the library staff.</p>
+        `
+      }
     );
 
     res.json(request);
@@ -249,7 +312,7 @@ export const startAcquisition = async (req: Request, res: Response) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'first_name', 'last_name', 'email']
+        attributes: ['id', 'email', 'firstName', 'lastName']
       }]
     });
 
@@ -257,7 +320,11 @@ export const startAcquisition = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
+    console.log('Full request object:', request.toJSON());
+    console.log('User object:', request.get('user'));
+    
     const user = request.get('user') as IncludedUser;
+    console.log('Parsed user:', user);
 
     if (request.get('status') !== 'approved') {
       return res.status(400).json({ 
@@ -290,12 +357,29 @@ export const startAcquisition = async (req: Request, res: Response) => {
     await sendEmail(
       user.email,
       'Book Acquisition Started',
-      `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #B45309;">Book Acquisition Started</h2>
-        <p>${notificationMessage}</p>
-      </div>
-      `
+      {
+        title: 'Book Acquisition Started',
+        heading: 'Book Acquisition Process Initiated',
+        content: `
+          <p>Dear ${user.firstName},</p>
+          <p>We have started the acquisition process for your requested book:</p>
+          <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('title')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Author:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('author')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Status:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">In Progress</td>
+            </tr>
+          </table>
+          <p>We will keep you updated on the progress of your request.</p>
+        `
+      }
     );
 
     res.json(request);
@@ -311,51 +395,52 @@ export const completeAcquisition = async (req: Request, res: Response) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'first_name', 'last_name', 'email']
+        attributes: ['id', 'firstName', 'lastName', 'email']
       }]
     });
 
-    if (!request || !request.get('user')) {
+    if (!request) {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    const user = request.get('user') as IncludedUser;
+    console.log('Request data:', request.toJSON());
 
-    if (request.get('status') !== 'in_progress') {
-      return res.status(400).json({ message: 'Request is not in acquisition process' });
-    }
+    const userData = request.get('user');
     
+    console.log('User data:', userData);
+
+    if (!userData) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     await request.update({ status: 'completed' });
 
-    const notificationMessage = `Great news! Your requested book "${request.get('title')}" has been acquired and will be available in the library soon.`;
-
-    // Send notification to the requesting user
-    await Notification.create({
-      userId: request.get('user_id'),
-      title: 'Book Acquisition Completed',
-      message: notificationMessage,
-      type: 'acquisition_completed',
-      bookRequestId: request.get('id')
-    });
-
-    // Send WebSocket notification
-    wsService.sendNotification(request.get('user_id'), {
-      title: 'Book Acquisition Completed',
-      message: notificationMessage,
-      type: 'acquisition_completed',
-      bookRequestId: request.get('id')
-    });
-
-    // Send email notification
     await sendEmail(
-      user.email,
+      userData.email,
       'Book Acquisition Completed',
-      `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2 style="color: #B45309;">Book Acquisition Completed</h2>
-        <p>${notificationMessage}</p>
-      </div>
-      `
+      {
+        title: 'Book Acquisition Completed',
+        heading: 'Book Acquisition Successfully Completed',
+        content: `
+          <p>Dear ${userData.firstName},</p>
+          <p>Great news! Your requested book has been acquired:</p>
+          <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('title')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Author:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${request.get('author')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Status:</strong></td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">Completed</td>
+            </tr>
+          </table>
+          <p>The book will be available in the library soon.</p>
+        `
+      }
     );
 
     res.json(request);

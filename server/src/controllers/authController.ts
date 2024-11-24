@@ -6,6 +6,7 @@ import type { TransportOptions } from 'nodemailer';
 import User, { UserCreationAttributes } from '../models/User';
 import { sendWebSocketNotification } from '../services/websocketService';
 import { Op } from 'sequelize';
+import { sendEmail } from '../services/emailService';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -142,28 +143,25 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM,
-      to: email,
-      subject: 'Password Reset Request',
-      html: `
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-          <h2 style="color: #B45309;">BookHive Password Reset</h2>
-          <p>Hello ${user.firstName},</p>
-          <p>You have requested to reset your password. Please click the button below to set a new password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #B45309; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-              Reset Password
-            </a>
-          </div>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        </div>
-      `
-    };
+    await sendEmail(
+      email,
+      'Password Reset Request',
+      {
+        title: 'Reset Your Password',
+        heading: 'Password Reset Request',
+        content: `
+          <p>Dear ${user.firstName},</p>
+          <p>We received a request to reset your password for your BookHive Library account.</p>
+          <p>Click the button below to set a new password:</p>
+        `,
+        actionButton: {
+          text: 'Reset Password',
+          url: resetUrl
+        },
+        footerText: 'This password reset link will expire in 1 hour. If you did not request this reset, please ignore this email.'
+      }
+    );
 
-    await transporter.sendMail(mailOptions);
     res.json({ message: 'Password reset email sent' });
   } catch (error: any) {
     console.error('Forgot password error:', error);

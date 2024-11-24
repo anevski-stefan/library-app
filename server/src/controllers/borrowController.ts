@@ -62,23 +62,35 @@ export const borrowBook = async (req: Request, res: Response) => {
     });
 
     const adminEmails = await getAdminEmails();
-    const emailContent = `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h2 style="color: #B45309;">New Book Borrowed</h2>
-      <p>A book has been borrowed:</p>
-      <ul>
-        <li>Book: ${book.title}</li>
-        <li>Return Date: ${new Date(returnDate).toLocaleDateString()}</li>
-        <li>Borrower ID: ${userId}</li>
-      </ul>
-    </div>
-    `;
-
     for (const adminEmail of adminEmails) {
       await sendEmail(
         adminEmail,
-        'Book Borrowed Notification',
-        emailContent
+        'New Book Borrowed',
+        {
+          title: 'New Book Borrowed',
+          heading: 'New Book Borrowing Notification',
+          content: `
+            <p>A new book has been borrowed from the library:</p>
+            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${book.title}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Borrower:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.user?.firstName} ${req.user?.lastName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Return Date:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${new Date(returnDate).toLocaleDateString()}</td>
+              </tr>
+            </table>
+          `,
+          actionButton: {
+            text: 'View Borrowing Details',
+            url: `${process.env.CLIENT_URL}/books/${book.id}`
+          }
+        }
       );
     }
 
@@ -131,22 +143,43 @@ export const returnBook = async (req: Request, res: Response) => {
     );
 
     const adminEmails = await getAdminEmails();
-    const emailContent = `
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-      <h2 style="color: #B45309;">Book Returned</h2>
-      <p>A book has been returned:</p>
-      <ul>
-        <li>Book: ${book.title}</li>
-        <li>Return Date: ${new Date().toLocaleDateString()}</li>
-      </ul>
-    </div>
-    `;
-
     for (const adminEmail of adminEmails) {
       await sendEmail(
         adminEmail,
         'Book Returned Notification',
-        emailContent
+        {
+          title: 'Book Returned',
+          heading: 'Book Return Notification',
+          content: `
+            <p>A book has been returned to the library:</p>
+            <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; width: 120px;"><strong>Book Title:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${book.title}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Author:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${book.author}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Returned By:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${req.user?.firstName} ${req.user?.lastName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Return Date:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${new Date().toLocaleDateString()}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>Borrow ID:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${borrowId}</td>
+              </tr>
+            </table>
+          `,
+          actionButton: {
+            text: 'View Book Details',
+            url: `${process.env.CLIENT_URL}/books/${book.id}`
+          }
+        }
       );
     }
 
