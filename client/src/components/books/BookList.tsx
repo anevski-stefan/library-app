@@ -5,7 +5,7 @@ import BorrowModal from './BorrowModal';
 import BookScanner from './BookScanner';
 import { useAppSelector } from '../../store/hooks';
 import RequestBookModal from './RequestBookModal';
-import { FaPlus, FaQrcode, FaEdit, FaTrash, FaBook, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaPlus, FaQrcode, FaEdit, FaTrash, FaBook, FaSearch, FaFilter, FaHandPaper } from 'react-icons/fa';
 
 interface Book {
     id: string;
@@ -157,9 +157,11 @@ const BookList = () => {
         ) : (
           <button
             onClick={() => handleRequestBook({ title: '', author: '', id: '', isbn: '', quantity: 0, available_quantity: 0, book_category: '', createdAt: '', updatedAt: '' })}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="border-2 border-blue-500 text-blue-500 px-4 py-2 rounded-lg hover:bg-blue-50 flex items-center gap-2 transition-all duration-200"
+            title="Request New Book"
           >
-            Request New Book
+            <FaHandPaper className="w-4 h-4" />
+            <span className="text-sm font-medium">Request Book</span>
           </button>
         )}
       </div>
