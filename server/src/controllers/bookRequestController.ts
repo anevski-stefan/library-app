@@ -403,18 +403,37 @@ export const completeAcquisition = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Request not found' });
     }
 
-    console.log('Request data:', request.toJSON());
-
     const userData = request.get('user');
     
-    console.log('User data:', userData);
-
     if (!userData) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // 1. Update request status
     await request.update({ status: 'completed' });
 
+    // 2. Create notification message
+    const notificationMessage = `The acquisition process for "${request.get('title')}" has been completed!`;
+
+    // 3. Create in-app notification
+    await Notification.create({
+      userId: request.get('user_id'),
+      title: 'Book Acquisition Completed',
+      message: notificationMessage,
+      type: 'acquisition_completed',
+      bookRequestId: request.get('id'),
+      read: false
+    });
+
+    // 4. Send WebSocket notification
+    wsService.sendNotification(request.get('user_id'), {
+      title: 'Book Acquisition Completed',
+      message: notificationMessage,
+      type: 'acquisition_completed',
+      bookRequestId: request.get('id')
+    });
+
+    // 5. Send email notification
     await sendEmail(
       userData.email,
       'Book Acquisition Completed',

@@ -5,7 +5,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'overdue' | 'reminder' | 'return' | 'book_request' | 'request_approved' | 'request_rejected';
+  type: 'overdue' | 'reminder' | 'return' | 'book_request' | 'request_approved' | 'request_rejected' | 'acquisition_started' | 'acquisition_completed';
   read: boolean;
   borrowId?: string;
   bookRequestId?: string;

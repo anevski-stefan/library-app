@@ -5,6 +5,7 @@ import { sequelize } from '../config/database';
 import { wsService } from '../services/websocketService';
 import User from '../models/User';
 import { sendEmail } from '../services/emailService';
+import Notification from '../models/Notification';
 
 async function getAdminEmails(): Promise<string[]> {
   const adminUsers = await User.findAll({
@@ -16,6 +17,7 @@ async function getAdminEmails(): Promise<string[]> {
 
 export const borrowBook = async (req: Request, res: Response) => {
   const t = await sequelize.transaction();
+  let createdBorrow: Borrow | null = null;
 
   try {
     const { bookId, returnDate } = req.body;
@@ -44,7 +46,7 @@ export const borrowBook = async (req: Request, res: Response) => {
       reminderSent: false
     };
 
-    const borrow = await Borrow.create(borrowData, { transaction: t });
+    createdBorrow = await Borrow.create(borrowData, { transaction: t });
 
     // Update book availability
     await book.update(
@@ -54,17 +56,48 @@ export const borrowBook = async (req: Request, res: Response) => {
       { transaction: t }
     );
 
-    // Send notification through WebSocket
+    await t.commit();
+
+    // After successful commit, send notifications
+    // Send notification through WebSocket to the borrower
     wsService.sendNotification(userId, {
       title: 'Book Borrowed',
       message: `You have successfully borrowed ${book.title}`,
       type: 'success'
     });
 
-    const adminEmails = await getAdminEmails();
-    for (const adminEmail of adminEmails) {
+    // Find all admin users and create notifications for them
+    const adminUsers = await User.findAll({
+      where: {
+        role: 'admin'
+      }
+    });
+
+    const notificationMessage = `${req.user?.firstName} ${req.user?.lastName} has borrowed "${book.title}"`;
+
+    // Create notifications and send emails for each admin
+    for (const admin of adminUsers) {
+      // Create in-app notification
+      await Notification.create({
+        userId: admin.get('id'),
+        title: 'New Book Borrowed',
+        message: notificationMessage,
+        type: 'book_request',
+        borrowId: createdBorrow.id,
+        read: false
+      });
+
+      // Send WebSocket notification
+      wsService.sendNotification(admin.get('id'), {
+        title: 'New Book Borrowed',
+        message: notificationMessage,
+        type: 'book_request',
+        borrowId: createdBorrow.id
+      });
+
+      // Send email notification
       await sendEmail(
-        adminEmail,
+        admin.get('email'),
         'New Book Borrowed',
         {
           title: 'New Book Borrowed',
@@ -94,8 +127,7 @@ export const borrowBook = async (req: Request, res: Response) => {
       );
     }
 
-    await t.commit();
-    res.status(201).json(borrow);
+    res.status(201).json(createdBorrow);
   } catch (error) {
     await t.rollback();
     console.error('Borrow book error:', error);
