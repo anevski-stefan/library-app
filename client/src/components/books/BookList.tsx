@@ -5,6 +5,7 @@ import BorrowModal from './BorrowModal';
 import BookScanner from './BookScanner';
 import { useAppSelector } from '../../store/hooks';
 import RequestBookModal from './RequestBookModal';
+import { FaPlus, FaQrcode, FaEdit, FaTrash, FaBook } from 'react-icons/fa';
 
 interface Book {
     id: string;
@@ -140,15 +141,17 @@ const BookList = () => {
           <>
             <button 
               onClick={() => setIsFormOpen(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 flex items-center justify-center"
+              title="Add New Book"
             >
-              Add New Book
+              <FaPlus className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setIsScannerOpen(true)}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 flex items-center justify-center"
+              title="Scan Book"
             >
-              Scan Book
+              <FaQrcode className="w-5 h-5" />
             </button>
           </>
         ) : (
@@ -170,14 +173,16 @@ const BookList = () => {
           <button 
             onClick={() => handleEdit(book)}
             className="text-indigo-600 hover:text-indigo-900 mr-4"
+            title="Edit Book"
           >
-            Edit
+            <FaEdit className="w-5 h-5" />
           </button>
           <button 
             onClick={() => handleDelete(book.id)}
             className="text-red-600 hover:text-red-900 mr-4"
+            title="Delete Book"
           >
-            Delete
+            <FaTrash className="w-5 h-5" />
           </button>
         </>
       )}
@@ -185,8 +190,9 @@ const BookList = () => {
         <button
           onClick={() => handleBorrow(book)}
           className="text-green-600 hover:text-green-900"
+          title="Borrow Book"
         >
-          Borrow
+          <FaBook className="w-5 h-5" />
         </button>
       )}
     </td>
