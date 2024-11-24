@@ -92,7 +92,14 @@ const RequestBookModal = ({ bookTitle, bookAuthor, onSuccess, onClose }: Request
             <div className="mb-4 text-red-500 text-sm">{error}</div>
           )}
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-start space-x-4">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Submitting...' : 'Submit Request'}
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -100,13 +107,6 @@ const RequestBookModal = ({ bookTitle, bookAuthor, onSuccess, onClose }: Request
               disabled={loading}
             >
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Submitting...' : 'Submit Request'}
             </button>
           </div>
         </form>
