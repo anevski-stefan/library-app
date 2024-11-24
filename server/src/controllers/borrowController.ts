@@ -3,6 +3,16 @@ import Book from '../models/Book';
 import Borrow, { BorrowCreationAttributes } from '../models/Borrow';
 import { sequelize } from '../config/database';
 import { wsService } from '../services/websocketService';
+import User from '../models/User';
+import { sendEmail } from '../services/emailService';
+
+async function getAdminEmails(): Promise<string[]> {
+  const adminUsers = await User.findAll({
+    where: { role: 'admin' },
+    attributes: ['email']
+  });
+  return adminUsers.map(admin => admin.get('email'));
+}
 
 export const borrowBook = async (req: Request, res: Response) => {
   const t = await sequelize.transaction();
@@ -51,6 +61,27 @@ export const borrowBook = async (req: Request, res: Response) => {
       type: 'success'
     });
 
+    const adminEmails = await getAdminEmails();
+    const emailContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <h2 style="color: #B45309;">New Book Borrowed</h2>
+      <p>A book has been borrowed:</p>
+      <ul>
+        <li>Book: ${book.title}</li>
+        <li>Return Date: ${new Date(returnDate).toLocaleDateString()}</li>
+        <li>Borrower ID: ${userId}</li>
+      </ul>
+    </div>
+    `;
+
+    for (const adminEmail of adminEmails) {
+      await sendEmail(
+        adminEmail,
+        'Book Borrowed Notification',
+        emailContent
+      );
+    }
+
     await t.commit();
     res.status(201).json(borrow);
   } catch (error) {
@@ -98,6 +129,26 @@ export const returnBook = async (req: Request, res: Response) => {
       },
       { transaction: t }
     );
+
+    const adminEmails = await getAdminEmails();
+    const emailContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <h2 style="color: #B45309;">Book Returned</h2>
+      <p>A book has been returned:</p>
+      <ul>
+        <li>Book: ${book.title}</li>
+        <li>Return Date: ${new Date().toLocaleDateString()}</li>
+      </ul>
+    </div>
+    `;
+
+    for (const adminEmail of adminEmails) {
+      await sendEmail(
+        adminEmail,
+        'Book Returned Notification',
+        emailContent
+      );
+    }
 
     await t.commit();
     res.json(borrow);

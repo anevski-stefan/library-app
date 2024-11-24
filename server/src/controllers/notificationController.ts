@@ -2,6 +2,16 @@ import { Request, Response } from 'express';
 import Notification from '../models/Notification';
 import Borrow, { BorrowAttributes } from '../models/Borrow';
 import { Op, WhereOptions } from 'sequelize';
+import User from '../models/User';
+import { sendEmail } from '../services/emailService';
+
+async function getAdminEmails(): Promise<string[]> {
+  const adminUsers = await User.findAll({
+    where: { role: 'admin' },
+    attributes: ['email']
+  });
+  return adminUsers.map(admin => admin.get('email'));
+}
 
 export const createOverdueNotification = async (
   userId: string,
@@ -17,6 +27,27 @@ export const createOverdueNotification = async (
       borrowId,
       read: false,
     });
+
+    const adminEmails = await getAdminEmails();
+    const emailContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <h2 style="color: #B45309;">Book Overdue Alert</h2>
+      <p>A book is overdue:</p>
+      <ul>
+        <li>Book: ${bookTitle}</li>
+        <li>User ID: ${userId}</li>
+        <li>Borrow ID: ${borrowId}</li>
+      </ul>
+    </div>
+    `;
+
+    for (const adminEmail of adminEmails) {
+      await sendEmail(
+        adminEmail,
+        'Book Overdue Alert',
+        emailContent
+      );
+    }
   } catch (error) {
     console.error('Error creating overdue notification:', error);
   }
