@@ -17,6 +17,7 @@ interface Borrow {
 const BorrowingHistory = () => {
   const [borrows, setBorrows] = useState<Borrow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBorrows();
@@ -25,10 +26,12 @@ const BorrowingHistory = () => {
   const fetchBorrows = async () => {
     try {
       const response = await api.get('/borrows/user');
+      console.log('Borrows data:', response.data); // Debug log
       setBorrows(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching borrows:', error);
+      setError('Failed to fetch borrowing history');
       setLoading(false);
     }
   };
@@ -36,9 +39,10 @@ const BorrowingHistory = () => {
   const handleReturn = async (borrowId: string) => {
     try {
       await api.put(`/borrows/${borrowId}/return`);
-      fetchBorrows();
+      await fetchBorrows(); // Refresh the list after returning
     } catch (error) {
       console.error('Error returning book:', error);
+      setError('Failed to return book');
     }
   };
 
@@ -49,6 +53,11 @@ const BorrowingHistory = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">My Borrowing History</h1>
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -74,10 +83,11 @@ const BorrowingHistory = () => {
                   {new Date(borrow.returnDate).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                    ${borrow.status === 'borrowed' ? 'bg-yellow-100 text-yellow-800' : 
-                      borrow.status === 'returned' ? 'bg-green-100 text-green-800' : 
-                      'bg-red-100 text-red-800'}`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    borrow.status === 'borrowed' ? 'bg-yellow-100 text-yellow-800' : 
+                    borrow.status === 'returned' ? 'bg-green-100 text-green-800' : 
+                    'bg-red-100 text-red-800'
+                  }`}>
                     {borrow.status}
                   </span>
                 </td>
@@ -85,7 +95,7 @@ const BorrowingHistory = () => {
                   {borrow.status === 'borrowed' && (
                     <button
                       onClick={() => handleReturn(borrow.id)}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md transition-colors duration-200"
                     >
                       Return
                     </button>

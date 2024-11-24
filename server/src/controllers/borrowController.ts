@@ -120,7 +120,28 @@ export const getUserBorrows = async (req: Request, res: Response) => {
       }],
       order: [['borrowDate', 'DESC']],
     });
-    res.json(borrows);
+
+    // Calculate status for each borrow
+    const borrowsWithStatus = borrows.map(borrow => {
+      const borrowData = borrow.get({ plain: true });
+      const today = new Date();
+      
+      let status: 'borrowed' | 'returned' | 'overdue';
+      if (borrowData.actualReturnDate) {
+        status = 'returned';
+      } else if (new Date(borrowData.returnDate) < today) {
+        status = 'overdue';
+      } else {
+        status = 'borrowed';
+      }
+
+      return {
+        ...borrowData,
+        status
+      };
+    });
+
+    res.json(borrowsWithStatus);
   } catch (error) {
     console.error('Get user borrows error:', error);
     res.status(500).json({ message: 'Error fetching borrows' });
