@@ -31,6 +31,7 @@ interface RecentBorrow {
   };
   borrowDate: string;
   returnDate: string;
+  actualReturnDate?: string | null;
   status: 'borrowed' | 'returned' | 'overdue';
 }
 
@@ -64,12 +65,28 @@ export default function Dashboard() {
     try {
       const booksResponse = await api.get('/books');
       setBooks(booksResponse.data);
-      console.log('Books from API:', booksResponse.data);
 
       const borrowsResponse = await api.get('/borrows/user');
-      setRecentBorrows(borrowsResponse.data);
-      console.log('Borrows from API:', borrowsResponse.data);
+      console.log('Raw borrows data:', borrowsResponse.data);
 
+      const borrowsWithStatus = borrowsResponse.data.map((borrow: any) => {
+        let status: 'borrowed' | 'returned' | 'overdue';
+        const today = new Date();
+        const returnDate = new Date(borrow.returnDate);
+        
+        if (borrow.actualReturnDate) {
+          status = 'returned';
+        } else if (returnDate < today) {
+          status = 'overdue';
+        } else {
+          status = 'borrowed';
+        }
+        
+        return { ...borrow, status };
+      });
+      
+      console.log('Borrows with status:', borrowsWithStatus);
+      setRecentBorrows(borrowsWithStatus);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -78,13 +95,31 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (books.length > 0) {
+    if (books.length > 0 && recentBorrows.length > 0) {
+      console.log('Calculating stats with:', {
+        booksLength: books.length,
+        borrowsLength: recentBorrows.length
+      });
+
+      const activeBorrows = recentBorrows.filter(borrow => 
+        !borrow.actualReturnDate && 
+        (borrow.status === 'borrowed' || borrow.status === 'overdue')
+      );
+
+      const borrowedCount = activeBorrows.length;
+      
+      const overdueCount = activeBorrows.filter(borrow => 
+        borrow.status === 'overdue'
+      ).length;
+
       const calculatedStats = {
         totalBooks: books.length,
         availableBooks: books.filter(book => book.available_quantity > 0).length,
-        borrowedBooks: recentBorrows.filter(borrow => borrow.status === 'borrowed').length,
-        overdueBooks: recentBorrows.filter(borrow => borrow.status === 'overdue').length
+        borrowedBooks: borrowedCount,
+        overdueBooks: overdueCount
       };
+      
+      console.log('Active borrows:', activeBorrows);
       console.log('Calculated stats:', calculatedStats);
       setStats(calculatedStats);
     }
