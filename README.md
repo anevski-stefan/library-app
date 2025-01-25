@@ -1,6 +1,6 @@
-# BookHive Library Management System
+# BookHive - Library Management System
 
-BookHive is a modern library management system built with React, TypeScript, and Node.js. It provides a comprehensive solution for managing books, user borrowings, and library administration.
+BookHive is a modern library management system built with React, TypeScript, and Node.js. It provides a comprehensive solution for managing books, user borrowing, and book requests in a library setting.
 
 ## Features
 
@@ -12,106 +12,105 @@ BookHive is a modern library management system built with React, TypeScript, and
 
 - 👥 User Management
   - Role-based access control (Admin/User)
-  - Company email domain restriction
-  - Secure authentication system
-  - Password reset functionality
+  - User authentication and authorization
+  - Personal borrowing history
 
-- 📖 Borrowing System
-  - Borrow and return books
-  - Track due dates
-  - View borrowing history
-  - Automated overdue notifications
-
-- 📱 Modern UI/UX
-  - Responsive design
+- 📱 Smart Features
   - Real-time notifications
-  - Search and filter capabilities
-  - Dashboard with key metrics
+  - Book request system
+  - Due date reminders
+  - Overdue notifications
+  - Book availability tracking
 
 ## Tech Stack
 
 ### Frontend
-- React 18
-- TypeScript
-- Redux Toolkit
-- TailwindCSS
-- Vite
-- React Router DOM
-- Axios
+- React with TypeScript
+- Redux Toolkit for state management
+- TailwindCSS for styling
+- Vite as build tool
+- WebSocket for real-time notifications
 
 ### Backend
-- Node.js
-- Express
-- PostgreSQL
-- Sequelize ORM
-- WebSocket
-- JWT Authentication
+- Node.js with Express
+- TypeScript
+- PostgreSQL with Sequelize ORM
+- WebSocket for real-time communication
+- JWT for authentication
 
-## Prerequisites
+## Getting Started
 
+### Prerequisites
 - Node.js (v18 or higher)
 - PostgreSQL
-- npm or yarn
 - Docker (optional)
 
-## Installation
+### Installation
 
 1. Clone the repository:
-bash
-git clone https://github.com/anevski-stefan/bookhive.git
-cd bookhive
+```bash
+git clone https://github.com/anevski-stefan/library-app.git
+cd library-app
+```
 
 2. Install dependencies:
 ```bash
-# Install frontend dependencies
+# Install client dependencies
 cd client
 npm install
 
-# Install backend dependencies
+# Install server dependencies
 cd ../server
 npm install
 ```
 
-3. Configure environment variables:
-   - Copy `.env.example` to `.env` in both client and server directories
-   - Update the variables with your configuration
+3. Set up environment variables:
+
+Create `.env` files in both client and server directories:
+
+Server `.env`:
+```env
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=library_db
+JWT_SECRET=your_jwt_secret
+```
 
 4. Start the development servers:
+
 ```bash
-# Start backend server
+# Start the backend server
 cd server
 npm run dev
 
-# Start frontend development server
+# Start the frontend development server
 cd client
 npm run dev
 ```
 
-## Docker Deployment
+### Docker Setup
 
-The application includes Docker configuration for easy deployment:
+Alternatively, you can use Docker Compose to run the entire application:
 
 ```bash
-docker-compose up -d
+docker-compose up --build
 ```
-
-This will start the frontend, backend, and PostgreSQL database services.
 
 ## Project Structure
 
 ```
-bookhive/
 ├── client/                 # Frontend React application
 │   ├── src/
 │   │   ├── components/    # React components
 │   │   ├── features/      # Redux slices and features
-│   │   ├── services/      # API services
+│   │   ├── services/      # API and WebSocket services
 │   │   └── store/         # Redux store configuration
 │   └── ...
-├── server/                # Backend Node.js application
+├── server/                 # Backend Node.js application
 │   ├── src/
 │   │   ├── controllers/   # Request handlers
-│   │   ├── models/        # Database models
+│   │   ├── models/        # Sequelize models
 │   │   ├── routes/        # API routes
 │   │   └── services/      # Business logic
 │   └── ...
