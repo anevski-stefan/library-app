@@ -97,22 +97,6 @@ Alternatively, you can use Docker Compose to run the entire application:
 docker-compose up --build
 ```
 
-## Project Structure
+## License
 
-```
-├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── features/      # Redux slices and features
-│   │   ├── services/      # API and WebSocket services
-│   │   └── store/         # Redux store configuration
-│   └── ...
-├── server/                 # Backend Node.js application
-│   ├── src/
-│   │   ├── controllers/   # Request handlers
-│   │   ├── models/        # Sequelize models
-│   │   ├── routes/        # API routes
-│   │   └── services/      # Business logic
-│   └── ...
-└── docker-compose.yml     # Docker composition file
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
